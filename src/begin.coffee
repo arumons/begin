@@ -1,18 +1,25 @@
-events = require('events')
-util = require('util')
+events = require 'events'
+util = require 'util'
 
 class Scope
 	constructor: (@unit, @self) ->
-	
-	next: (args...) ->
+		self = @
+		@next = (args...) ->
+			self._next.apply self, args
+		@throw = (args...) ->
+			self._throw.apply self, args
+		@return = (args...) ->
+			self._return.apply self, args
+
+	_next: (args...) ->
 		args.unshift('next')
 		@unit.emit.apply(@unit, args)
 
-	throw: (args...) ->
+	_throw: (args...) ->
 		args.unshift('throw')
 		@unit.emit.apply(@unit, args)
 
-	return: (args...) ->
+	_return: (args...) ->
 		args.unshift('return')
 		@unit.emit.apply(@unit, args)
 
@@ -39,6 +46,8 @@ class Unit extends events.EventEmitter
 				continuation.throw.apply(continuation, args)
 			else
 				Units.CurrentContinuation = undefined
+				process.nextTick ->
+					throw args[0]
 
 		@on 'return', (args...) ->
 			if succeed and continuation?
@@ -119,6 +128,36 @@ class Unit extends events.EventEmitter
 			b[key] = a[key]
 
 
+arrays = (arrays...) ->
+	new Arrays arrays
+
+class Arrays
+	constructor: (arrays) ->
+		@ziped = Arrays.zip arrays
+
+	@zip: (arrays) ->
+		max = 0
+		arrays.forEach (array) ->
+			len = array.length
+			max = len if max < len
+
+		line = []
+		for i in [0...max]
+			line.push arrays.map (v) ->
+							v[""+i]
+		line
+
+	each: (block, thisp) ->
+		result = []
+		if not thisp?
+			thisp = global
+		@ziped.map (args, i, _array) ->
+			args.push i
+			args.push _array
+			result.push block.apply(thisp, args)
+		result
+
+
 class ArrayUnits
 	_prepare:(block, thisp) ->
 		if not thisp?
@@ -134,24 +173,24 @@ class ArrayUnits
 	filter: (block, thisp) ->
 		{defed, thisp, units} = @_prepare(block, thisp)
 		result = []
-		new Units (array) ->
-			array.forEach((item, index, array) ->
-				units.then(defed.call(thisp, item, index, array))
-					 .then((v) -> result.push(item) if v; @next()))
+		new Units (_arrays...) ->
+			arrays.apply(null, _arrays).each((args...) ->
+				units.then(defed.apply(thisp, args))
+				units.then((v) -> result.push(args.slice(0, -2)) if v; @next()))
 			units.then ->
-				@next result
-			units.end(true)
+				@next.apply @, Arrays.zip result
+			units.end true
 
 	each: (block, thisp) ->
 		{defed, thisp, units} = @_prepare(block, thisp)
 		result = []
-		new Units (array) ->
-			array.forEach((item, index, array) ->
-				units.then(defed.call(thisp, item, index, array))
-				     .then((v) -> result.push(v); @next()))
-			units.then(->
-				@next result)
-			units.end(true)
+		new Units (_arrays...) ->
+			arrays.apply(null, _arrays).each((args...) ->
+				units.then(defed.apply(thisp, args))
+				units.then((args...) -> result.push args; @next()))
+			units.then ->
+				@next.apply @, Arrays.zip result
+			units.end true
 
 	every: (block, thisp) ->
 		{defed, thisp, units} = @_prepare(block, thisp)
@@ -268,11 +307,11 @@ class Units
 		@then new ArrayUnits().reduceRight(block, init)
 
 
-begin = (block) ->
-	if Array.isArray block
-		new Units((-> @next block), undefined, true)
+begin = (args...) ->
+	if Array.isArray args[0]
+		new Units((-> @next.apply(@, args)), undefined, true)
 	else
-		new Units(block, undefined, true)
+		new Units(args[0], undefined, true)
 
 macro = (block) ->
 	defed = (args...) ->

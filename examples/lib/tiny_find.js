@@ -11,7 +11,7 @@
     return begin(function() {
       process.chdir(dirname);
       return fs.readdir('.', this.next);
-    }).then(function(error, files) {
+    })._(function(error, files) {
       return this.next(files);
     }).each(function(file) {
       return fs.realpath(file, this.next);

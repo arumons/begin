@@ -17,7 +17,7 @@ exports.begin_next_2 = (test) ->
 	begin(->
 		test.ok true, "one"
 		@next())
-	.then(->
+	._(->
 		test.ok true, "two"
 		test.done()
 		@next())
@@ -28,7 +28,7 @@ exports.begin_next_3 = (test) ->
 	test.expect(1)
 	begin(->
 		@next 1 )
-	.then((v) ->
+	._((v) ->
 		test.equal v, 1
 		test.done())
 	.end()
@@ -38,7 +38,7 @@ exports.begin_next_4 = (test) ->
 	test.expect(2)
 	begin(->
 		@next 1, 2 )
-	.then((v1, v2) ->
+	._((v1, v2) ->
 		test.equal v1, 1
 		test.equal v2, 2
 		test.done())
@@ -91,8 +91,8 @@ exports.next_and_throw_1 = (test) ->
 	test.expect 2
 	begin(->
 		@throw 1, 2)
-	.then(-> @next)
-	.then(-> @throw)
+	._(-> @next)
+	._(-> @throw)
 	.catch((v1, v2) ->
 		test.equal v1, 1
 		test.equal v2, 2
@@ -107,7 +107,7 @@ exports.next_and_throw_2 = (test) ->
 		@next 1, 2)
 	.catch(-> @next())
 	.catch(-> @throw())
-	.then((v1, v2) ->
+	._((v1, v2) ->
 		test.equal v1, 1
 		test.equal v2, 2
 		test.done()
@@ -131,7 +131,7 @@ exports.real_throw_2 = (test) ->
 	begin(->
 		@a = 10
 		@next 10)
-	.then((v) ->
+	._((v) ->
 		test.equal @a, 10
 		throw "test")
 	.catch((error) ->
@@ -147,7 +147,7 @@ exports.scope_1 = (test) ->
 	begin(->
 		@a = 1
 		@next())
-	.then(->
+	._(->
 		test.equal @a, 1
 		test.done()
 		@next())
@@ -159,11 +159,11 @@ exports.scope_2 = (test) ->
 	begin(->
 		@a = 1
 		@next())
-	.then(->
+	._(->
 		test.equal @a, 1
 		@b = 2
 		@next())
-	.then(->
+	._(->
 		test.equal @a, 1
 		test.equal @b, 2
 		test.done()
@@ -179,7 +179,7 @@ exports.scope_3 = (test) ->
 			@a = 30
 			@next())
 		.end())
-	.then(->
+	._(->
 		test.equal @a, 30
 		test.done()
 		@next())
@@ -192,7 +192,7 @@ exports.return_1 = (test) ->
 		begin(->
 			@next 10)
 		.end(@return))
-	.then((v) ->
+	._((v) ->
 		test.equal v, 10
 		test.done())
 	.end()
@@ -215,7 +215,7 @@ exports.def_1 = (test) ->
 	t = def(->
 			@next 1)
 	t()
-	.then((v) -> test.equal v, 1; test.done())
+	._((v) -> test.equal v, 1; test.done())
 	.end()
 
 #def with arguments
@@ -224,7 +224,7 @@ exports.def_2 = (test) ->
 	t = def((v) ->
 			@next v * 3)
 	t(3)
-	.then((v) -> test.equal v, 9; test.done())
+	._((v) -> test.equal v, 9; test.done())
 	.end()
 
 #def run ather scope
@@ -234,20 +234,20 @@ exports.def_3 = (test) ->
 			@test = 3
 			@next())
 	t()
-	.then(-> test.equal undefined, @test; test.done())
+	._(-> test.equal undefined, @test; test.done())
 	.end()
 
-# return skip all then and catch
+# return skip all _ and catch
 exports.return_1 = (test) ->
 	test.expect 2
 	begin(->
 		begin(->
 			@a = 10
 			@return())
-		.then(-> test.ok true, 'not come'; @throw())
+		._(-> test.ok true, 'not come'; @throw())
 		.catch(-> test.ok true, 'not come'; @next())
 		.end())
-	.then(->
+	._(->
 		test.ok true, 'only come'
 		test.equal @a, undefined
 		test.done()
@@ -270,7 +270,7 @@ exports.filter_1 = (test) ->
 	begin([1, 2, 3]).filter((v) ->
 		@a = 10
 		@next v % 2 is 0)
-	.then((lst) ->
+	._((lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2]
 		test.done())
@@ -282,7 +282,7 @@ exports.filter_2 = (test) ->
 		@next [1,2,3])
 	.filter((v) ->
 		@next v % 2 is 1)
-	.then((lst) ->
+	._((lst) ->
 		test.deepEqual lst, [1, 3]
 		test.done())
 	.end()
@@ -291,9 +291,9 @@ exports.filter_3 = (test) ->
 	test.expect 1
 	begin(->
 		@next 100)
-	.then([1,2,3]).filter((v) ->
+	._([1,2,3]).filter((v) ->
 		@next v % 2 is 1)
-	.then((lst) ->
+	._((lst) ->
 		test.deepEqual lst, [1, 3]
 		test.done())
 	.end()
@@ -303,7 +303,7 @@ exports.filter_4 = (test) ->
 	begin([1]).filter((v) ->
 		@test = 30
 		@next true)
-	.then((lst) ->
+	._((lst) ->
 		test.equal @test, 30
 		test.done()
 		@next())
@@ -315,7 +315,7 @@ exports.filter_5 = (test) ->
 		@test = 30
 		@next true
 	begin([1]).filter(a)
-	.then((lst) ->
+	._((lst) ->
 		test.equal @test, undefined
 		test.deepEqual lst, [1]
 		test.done()
@@ -327,7 +327,7 @@ exports.each_1 = (test) ->
 	begin([1, 2, 3]).each((v) ->
 		@a = 10
 		@next v * 2)
-	.then((lst) ->
+	._((lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2, 4, 6]
 		test.done())
@@ -339,7 +339,7 @@ exports.each_2 = (test) ->
 		@next [1,2,3])
 	.each((v) ->
 		@next v * 2)
-	.then((lst) ->
+	._((lst) ->
 		test.deepEqual lst, [2,4,6]
 		test.done())
 	.end()
@@ -348,9 +348,9 @@ exports.each_3 = (test) ->
 	test.expect 1
 	begin(->
 		@next 100)
-	.then([1,2,3]).each((v) ->
+	._([1,2,3]).each((v) ->
 		@next v * 3)
-	.then((lst) ->
+	._((lst) ->
 		test.deepEqual lst, [3,6,9]
 		test.done())
 	.end()
@@ -360,7 +360,7 @@ exports.each_4 = (test) ->
 	begin([1,2,3]).each((v) ->
 		@a = 10
 		@next v * 2)
-	.then((lst) ->
+	._((lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2,4,6]
 		test.done())
@@ -370,7 +370,7 @@ exports.every_1 = (test) ->
 	test.expect 1
 	begin([1,2,3]).every((v) ->
 		@next v < 5)
-	.then((v) ->
+	._((v) ->
 		test.equal true, v
 		test.done())
 	.end()
@@ -381,7 +381,7 @@ exports.every_2 = (test) ->
 		@next [1,2,3])
 	.every((v) ->
 		@next v % 2 is 1)
-	.then((v) ->
+	._((v) ->
 		test.equal false, v
 		test.done())
 	.end()
@@ -390,9 +390,9 @@ exports.every_3 = (test) ->
 	test.expect 1
 	begin(->
 		@next 100)
-	.then([1,2,3]).every((v) ->
+	._([1,2,3]).every((v) ->
 		@next v < 4)
-	.then((v) ->
+	._((v) ->
 		test.equal true, v
 		test.done())
 	.end()
@@ -402,7 +402,7 @@ exports.every_4 = (test) ->
 	begin([1,2,3]).every((v) ->
 		@a = 10
 		@next v < 2)
-	.then((v) ->
+	._((v) ->
 		test.equal @a, 10
 		test.equal v, false
 		test.done())
@@ -412,7 +412,7 @@ exports.some_1 = (test) ->
 	test.expect 1
 	begin([1,2,3]).some((v) ->
 		@next v is 2)
-	.then((v) ->
+	._((v) ->
 		test.equal true, v
 		test.done())
 	.end()
@@ -423,7 +423,7 @@ exports.some_2 = (test) ->
 		@next [1,2,3])
 	.some((v) ->
 		@next v is 1)
-	.then((v) ->
+	._((v) ->
 		test.equal v, true
 		test.done())
 	.end()
@@ -432,9 +432,9 @@ exports.some_3 = (test) ->
 	test.expect 1
 	begin(->
 		@next 100)
-	.then([1,2,3]).some((v) ->
+	._([1,2,3]).some((v) ->
 		@next v > 4)
-	.then((v) ->
+	._((v) ->
 		test.equal v, false
 		test.done())
 	.end()
@@ -444,7 +444,7 @@ exports.some_4 = (test) ->
 	begin([1,2,3]).some((v) ->
 		@a = 10
 		@next v > 4)
-	.then((v) ->
+	._((v) ->
 		test.equal @a, 10
 		test.equal v, false
 		test.done())
@@ -454,7 +454,7 @@ exports.reduce_1 = (test) ->
 	test.expect 1
 	begin([1,2,3]).reduce((pv, cv) ->
 		@next pv * cv)
-	.then((v) ->
+	._((v) ->
 		test.equal v, 6
 		test.done())
 	.end()
@@ -465,7 +465,7 @@ exports.reduce_2 = (test) ->
 		@next [1,2,3])
 	.reduce(((pv, cv) ->
 		@next pv * cv), 4)
-	.then((v) ->
+	._((v) ->
 		test.equal v, 24
 		test.done())
 	.end()
@@ -474,10 +474,10 @@ exports.reduce_3 = (test) ->
 	test.expect 1
 	begin(->
 		@next 100)
-	.then([1,2,3]).reduce((pv, cv) ->
+	._([1,2,3]).reduce((pv, cv) ->
 		@next pv * cv
 	, 4)
-	.then((v) ->
+	._((v) ->
 		test.equal v, 24
 		test.done())
 	.end()
@@ -487,7 +487,7 @@ exports.reduce_4 = (test) ->
 	begin([1,2,3]).reduce((pv, cv) ->
 		@a = 10
 		@next pv * cv)
-	.then((v) ->
+	._((v) ->
 		test.equal @a, 10
 		test.equal v, 6
 		test.done())
@@ -498,7 +498,7 @@ exports.reduceRight_1 = (test) ->
 	test.expect 1
 	begin([1,2,3]).reduceRight((pv, cv) ->
 		@next pv - cv)
-	.then((v) ->
+	._((v) ->
 		test.equal v, 0
 		test.done())
 	.end()
@@ -510,7 +510,7 @@ exports.reduceRight_2 = (test) ->
 	.reduceRight((pv, cv) ->
 		@next pv - cv
 	, 4)
-	.then((v) ->
+	._((v) ->
 		test.equal v, -2
 		test.done())
 	.end()
@@ -519,9 +519,9 @@ exports.reduceRight_3 = (test) ->
 	test.expect 1
 	begin(->
 		@next 100)
-	.then([1,2,3,4]).reduceRight((pv, cv) ->
+	._([1,2,3,4]).reduceRight((pv, cv) ->
 		@next pv - cv)
-	.then((v) ->
+	._((v) ->
 		test.equal v, -2
 		test.done())
 	.end()
@@ -531,7 +531,7 @@ exports.reduceRight_4 = (test) ->
 	begin([1,2,3]).reduceRight((pv, cv) ->
 		@a = 10
 		@next pv - cv)
-	.then((v) ->
+	._((v) ->
 		test.equal v, 0
 		test.equal @a, 10
 		test.done())

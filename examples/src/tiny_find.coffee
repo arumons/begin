@@ -10,7 +10,7 @@ find =
 		begin ->
 			process.chdir(dirname)
 			fs.readdir '.', @next
-		.then (error, files) ->
+		._ (error, files) ->
 			@next files
 		.each (file) ->
 			fs.realpath file, @next

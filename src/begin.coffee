@@ -57,7 +57,7 @@ class Unit extends events.EventEmitter
 			else
 				Units.CurrentContinuation = undefined
 
-	then: (unit) ->
+	_: (unit) ->
 		@on('next', (args...) ->
 			@_next_scope(unit, args))
 
@@ -175,9 +175,9 @@ class ArrayUnits
 		result = []
 		new Units (_arrays...) ->
 			arrays.apply(null, _arrays).each((args...) ->
-				units.then(defed.apply(thisp, args))
-				units.then((v) -> result.push(args.slice(0, -2)) if v; @next()))
-			units.then ->
+				units._(defed.apply(thisp, args))
+				units._((v) -> result.push(args.slice(0, -2)) if v; @next()))
+			units._ ->
 				@next.apply @, Arrays.zip result
 			units.end true
 
@@ -186,9 +186,9 @@ class ArrayUnits
 		result = []
 		new Units (_arrays...) ->
 			arrays.apply(null, _arrays).each((args...) ->
-				units.then(defed.apply(thisp, args))
-				units.then((args...) -> result.push args; @next()))
-			units.then ->
+				units._(defed.apply(thisp, args))
+				units._((args...) -> result.push args; @next()))
+			units._ ->
 				@next.apply @, Arrays.zip result
 			units.end true
 
@@ -197,26 +197,26 @@ class ArrayUnits
 		new Units (array) ->
 			units = new Units(-> @next())
 			array.forEach (item, index, array) ->
-				units.then(defed.call(thisp, item, index, array))
-					 .then (v) ->
+				units._(defed.call(thisp, item, index, array))
+					 ._ (v) ->
 							if not v
 								@return false
 							else
 								@next()
-			units.then(-> @return true).end(true)
+			units._(-> @return true).end(true)
 
 	some: (block, thisp) ->
 		{defed, thisp, unit} = @_prepare(block, thisp)
 		new Units (array) ->
 			units = new Units(-> @next())
 			array.forEach (item, index, array) ->
-				units.then(defed.call(thisp, item, index, array))
-					 .then (v) ->
+				units._(defed.call(thisp, item, index, array))
+					 ._ (v) ->
 							if v
 							    @return true
 							else
 								@next()
-			units.then(-> @return false).end(true)
+			units._(-> @return false).end(true)
 
 	reduce: (block, init, reverse) ->
 		new Units (array) ->
@@ -228,18 +228,18 @@ class ArrayUnits
 					@next()
 			array = array.reverse() if reverse
 			if init?
-				units.then(-> @next init, array[0], i++, array)
+				units._(-> @next init, array[0], i++, array)
 				_array = array.slice(1)
 			else
 				i++
-				units.then(-> @next array[0], array[1], i++, array)
+				units._(-> @next array[0], array[1], i++, array)
 				_array = array.slice(2)
 
 			_array.forEach((item) ->
-				units.then(block)
-					 .then((v) -> @next v, item, i++, array))
-			units.then(block)
-			units.then((result) -> @next result).end(true)
+				units._(block)
+					 ._((v) -> @next v, item, i++, array))
+			units._(block)
+			units._((result) -> @next result).end(true)
 
 	reduceRight: (block, init) ->
 		@reduce(block, init, true)
@@ -251,20 +251,20 @@ class Units
 		@tail = @head
 		@is_units = true
 	
-	then: (block, context) ->
+	_: (block, context) ->
 		if block.is_unit
-			@tail = @tail.then(block)
+			@tail = @tail._(block)
 		else if block.is_units
-			@tail.then(block.head)
+			@tail._(block.head)
 			@tail = block.tail
 		else if block.is_defed or block.is_macro
 			units = block()
-			@tail = @tail.then(units.head)
+			@tail = @tail._(units.head)
 			@tail = units.tail
 		else if Array.isArray block
-			@tail = @tail.then(new Unit(-> @next block))
+			@tail = @tail._(new Unit(-> @next block))
 		else
-			@tail = @tail.then(new Unit(block, context))
+			@tail = @tail._(new Unit(block, context))
 		return @
 
 	catch: (block, context) ->
@@ -289,22 +289,22 @@ class Units
 		@tail.invoke()
 		
 	filter: (block, thisp) ->
-		@then new ArrayUnits().filter(block, thisp)
+		@_ new ArrayUnits().filter(block, thisp)
 
 	each: (block, thisp) ->
-		@then new ArrayUnits().each(block, thisp)
+		@_ new ArrayUnits().each(block, thisp)
 
 	every: (block, thisp) ->
-		@then new ArrayUnits().every(block, thisp)
+		@_ new ArrayUnits().every(block, thisp)
 	
 	some: (block, thisp) ->
-		@then new ArrayUnits().some(block, thisp)
+		@_ new ArrayUnits().some(block, thisp)
 	
 	reduce: (block, init) ->
-		@then new ArrayUnits().reduce(block, init)
+		@_ new ArrayUnits().reduce(block, init)
 
 	reduceRight: (block, init) ->
-		@then new ArrayUnits().reduceRight(block, init)
+		@_ new ArrayUnits().reduceRight(block, init)
 
 
 begin = (args...) ->
@@ -318,7 +318,7 @@ macro = (block) ->
 				args = [] if args.length is 0
 				units = new Units (->
 					@next.apply(@, args))
-				return units.then(block, @)
+				return units._(block, @)
 	defed.is_macro = true
 	return defed
 
@@ -329,7 +329,7 @@ def = (block) ->
 		units = new Units(->
 			begin(->
 				@next.apply(@, args))
-			.then(block, self)
+			._(block, self)
 			.end())
 	defed.is_defed = true
 	return defed

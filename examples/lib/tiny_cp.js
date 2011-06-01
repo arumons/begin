@@ -6,7 +6,7 @@
   dist = process.argv[3];
   begin(function() {
     return fs.readFile(src, 'utf8', this.next);
-  }).then(function(error, data) {
+  })._(function(error, data) {
     return fs.writeFile(dist, data, this.next);
   }).end();
 }).call(this);

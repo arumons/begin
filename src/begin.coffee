@@ -90,6 +90,7 @@ class Unit extends events.EventEmitter
 
 		try
 			@block.call @scope
+			Units.CurrentContinuation = undefined
 		catch error
 			@_skip_scope @, 'throw', [error]
 
@@ -99,6 +100,7 @@ class Unit extends events.EventEmitter
 		Units.CurrentContinuation = next_unit.scope
 		try
 			next_unit.block.apply(next_unit.scope, args)
+			Units.CurrentContinuation = undefined
 		catch error
 			@_skip_scope next_unit, 'throw', [error]
 

@@ -179,7 +179,6 @@ class ArrayUnits
 	every: (block, thisp) ->
 		{defed, thisp, units} = @_prepare(block, thisp)
 		new Units (array) ->
-			units = new Units(-> @next())
 			array.forEach (item, index, array) ->
 				units._((-> defed.call(thisp, item, index, array)))
 					 ._ (v) ->
@@ -190,9 +189,8 @@ class ArrayUnits
 			units._(-> @return true).end()
 
 	some: (block, thisp) ->
-		{defed, thisp, unit} = @_prepare(block, thisp)
+		{defed, thisp, units} = @_prepare(block, thisp)
 		new Units (array) ->
-			units = new Units(-> @next())
 			array.forEach (item, index, array) ->
 				units._((-> defed.call(thisp, item, index, array)))
 					 ._ (v) ->
@@ -203,6 +201,12 @@ class ArrayUnits
 			units._(-> @return false).end()
 
 	reduce: (block, init, reverse) ->
+		global = (-> this)()
+		defed
+		if block.is_defed
+			defed = block
+		else
+			defed = macro(block).end()
 		new Units (array) ->
 			i = 0
 			units = new Units ->
@@ -220,9 +224,9 @@ class ArrayUnits
 				_array = array.slice(2)
 
 			_array.forEach((item) ->
-				units._(block)
+				units._((v1, v2, i, array) -> defed.call global, v1, v2, i, array)
 					 ._((v) -> @next v, item, i++, array))
-			units._(block)
+			units._((v1, v2, i, array) -> defed.call global, v1, v2, i, array)
 			units._((result) -> @next result).end()
 
 	reduceRight: (block, init) ->

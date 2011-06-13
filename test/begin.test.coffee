@@ -14,13 +14,13 @@ exports.begin_next_1 = (test) ->
 #chain
 exports.begin_next_2 = (test) ->
 	test.expect(2)
-	begin(->
+	begin ->
 		test.ok true, "one"
-		@next())
-	._(->
+		@next()
+	._ ->
 		test.ok true, "two"
 		test.done()
-		@next())
+		@next()
 	.end()
 
 #argument passing
@@ -135,7 +135,6 @@ exports.real_throw_2 = (test) ->
 		test.equal @a, 10
 		throw "test")
 	.catch((error) ->
-		console.log error
 		#test.equal error, "test"
 		test.done()
 		@next())
@@ -170,28 +169,13 @@ exports.scope_2 = (test) ->
 		@next())
 	.end()
 
-exports.scope_3 = (test) ->
-	test.expect 2
-	begin(->
-		@a = 10
-		begin(->
-			test.equal @a, 10
-			@a = 30
-			@next())
-		.end())
-	._(->
-		test.equal @a, 30
-		test.done()
-		@next())
-	.end()
-
 #next to return
 exports.return_1 = (test) ->
 	test.expect 1
 	begin(->
 		begin(->
 			@next 10)
-		.end(@return))
+		.end())
 	._((v) ->
 		test.equal v, 10
 		test.done())
@@ -203,7 +187,7 @@ exports.return_2 = (test) ->
 	begin(->
 		begin(->
 			@throw 10)
-		.end(@return))
+		.end())
 	.catch((v) ->
 		test.equal v, 10
 		test.done())
@@ -211,30 +195,62 @@ exports.return_2 = (test) ->
 
 #def
 exports.def_1 = (test) ->
-	test.expect 1
-	t = def(->
-			@next 1)
-	t()
-	._((v) -> test.equal v, 1; test.done())
+
+	t = def ->
+			@next 1
+		.end()
+	begin ->
+		t()
+	._ (v) ->
+		test.equal v, 1
+		test.done()
 	.end()
 
 #def with arguments
 exports.def_2 = (test) ->
 	test.expect 1
-	t = def((v) ->
-			@next v * 3)
-	t(3)
-	._((v) -> test.equal v, 9; test.done())
+	t = def (v) ->
+			@next v * 3
+		.end()
+
+	begin ->
+		t 3
+	._ (v) ->
+		test.equal v, 9
+		test.done()
 	.end()
 
 #def run ather scope
 exports.def_3 = (test) ->
 	test.expect 1
 	t = def((v) ->
-			@test = 3
+			@test = v
 			@next())
-	t()
-	._(-> test.equal undefined, @test; test.done())
+		.end()
+
+	begin ->
+		t 10
+	._ ->
+		test.equal undefined, @test
+		test.done()
+	.end()
+
+#def in def
+exports.def_4 = (test) ->
+	test.expect 1
+	t = def (v) ->
+			@next v * 3
+		.end()
+
+	t2 = def (v) ->
+		 	t v
+		.end()
+	
+	begin ->
+		t2 5
+	._ (v) ->
+		test.equal v, 15
+		test.done()
 	.end()
 
 # return skip all _ and catch
@@ -247,33 +263,34 @@ exports.return_1 = (test) ->
 		._(-> test.ok true, 'not come'; @throw())
 		.catch(-> test.ok true, 'not come'; @next())
 		.end())
-	._(->
+	._ ->
 		test.ok true, 'only come'
-		test.equal @a, undefined
+		test.equal @a, 10
 		test.done()
-		@next())
+		@next()
 	.end()
 
 exports.def_with_receiver_1 = (test) ->
 	test.expect 3
 	obj = {a:1,b:2}
-	obj.t = def((v) ->
+	obj.t = def (v) ->
 		test.equal v, 10
 		test.equal @self.a, 1
 		test.equal @self.b, 2
 		test.done()
-		@next())
-	obj.t(10).end()
+		@next()
+	.end()
+	obj.t(10)
 
 exports.filter_1 = (test) ->
 	test.expect 2
 	begin([1, 2, 3]).filter((v) ->
 		@a = 10
 		@next v % 2 is 0)
-	._((lst) ->
+	._ (lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2]
-		test.done())
+		test.done()
 	.end()
 
 exports.filter_2 = (test) ->
@@ -312,8 +329,9 @@ exports.filter_4 = (test) ->
 exports.filter_5 = (test) ->
 	test.expect 2
 	a = def (v) ->
-		@test = 30
-		@next true
+			@test = 30
+			@next true
+		.end()
 	begin([1]).filter(a)
 	._((lst) ->
 		test.equal @test, undefined

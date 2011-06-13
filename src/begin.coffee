@@ -1,31 +1,23 @@
-events = require 'events'
-util = require 'util'
-
 class Scope
-	constructor: (@unit) ->
-		self = @
+	constructor: (unit) ->
 		
 		@throw= (args...) ->
-			args.unshift 'throw'
-			self.unit.emit.apply self.unit, args
+			unit.throw.apply unit, args
 
 		@return = (args...) ->
-			args.unshift 'return'
-			self.unit.emit.apply self.unit, args
+			unit.return.apply unit, args
 
 		@next = (args...) ->
-			args.unshift 'next'
-			self.unit.emit.apply self.unit, args
+			unit.next.apply unit, args
 
-class Unit extends events.EventEmitter
+class Unit
 	constructor: (@block, receiver = undefined, @use_outer_scope = true) ->
 		@scope = Object.create(new Scope(@))
 		@scope.self = receiver
-		events.EventEmitter.call @
 
 	end: ->
 		continuation = Units.CurrentContinuation
-		@on 'next', (args...) ->
+		@next = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
 			if continuation?
@@ -33,46 +25,46 @@ class Unit extends events.EventEmitter
 				return
 			Units.CurrentContinuation = undefined
 
-		@on 'throw', (args...) ->
+		@throw = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
 			if continuation?
-				continuation.throw.apply(continuation, args)
+				continuation.throw.apply continuation, args
 				return
 			Units.CurrentContinuation = undefined
 			process.nextTick -> throw args[0]
 
-		@on 'return', (args...) ->
+		@return = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
 			if continuation?
-				continuation.next.apply(continuation, args)
+				continuation.next.apply continuation, args
 				return
 			Units.CurrentContinuation = undefined
 
 	_: (unit) ->
-		@on('next', (args...) ->
-			@_next_scope(unit, args))
+		@next = (args...) ->
+			@_next_scope unit, args
 
-		@on('throw', (args...) ->
-			@_skip_scope(unit, 'throw', args))
+		@throw = (args...) ->
+			@_skip_scope unit, 'throw', args
 
-		@on('return', (args...) ->
-			@_skip_scope(unit, 'return', args))
+		@return = (args...) ->
+			@_skip_scope unit, 'return', args
 
 		@next_unit = unit
 		unit.previous_unit = @
 		return unit
 
 	catch: (unit) ->
-		@on('next', (args...) ->
-			@_skip_scope(unit, 'next', args))
+		@next = (args...) ->
+			@_skip_scope unit, 'next', args
 			
-		@on('throw', (args...) ->
-			@_next_scope(unit, args))
+		@throw = (args...) ->
+			@_next_scope unit, args
 
-		@on('return', (args...) ->
-			@_skip_scope(unit, 'return', args))
+		@return = (args...) ->
+			@_skip_scope unit, 'return', args
 
 		@next_unit = unit
 		unit.previous_unit = @
@@ -94,7 +86,7 @@ class Unit extends events.EventEmitter
 			@_shift @scope, next_unit.scope
 		Units.CurrentContinuation = next_unit.scope
 		try
-			next_unit.block.apply(next_unit.scope, args)
+			next_unit.block.apply next_unit.scope, args
 			Units.CurrentContinuation = undefined
 		catch error
 			@_skip_scope next_unit, 'throw', [error]
@@ -103,8 +95,7 @@ class Unit extends events.EventEmitter
 		next_unit.use_outer_scope = @use_outer_scope
 		@_shift @scope, next_unit.scope
 		Units.CurrentContinuation = next_unit.scope
-		args.unshift(event)
-		next_unit.emit.apply(next_unit, args)
+		next_unit[event].apply next_unit, args
 
 	_shift: (from, to) ->
 		for own p of from

@@ -86,17 +86,12 @@ class Unit extends events.EventEmitter
 		if @use_outer_scope and Units.CurrentContinuation?
 			@_shift Units.CurrentContinuation, @scope
 
-		Units.CurrentContinuation = @scope
-
-		try
-			@block.call @scope
-			Units.CurrentContinuation = undefined
-		catch error
-			@_skip_scope @, 'throw', [error]
+		@_next_scope @, []
 
 	_next_scope: (next_unit, args) ->
-		next_unit.use_outer_scope = @use_outer_scope
-		@_shift @scope, next_unit.scope
+		if @ isnt next_unit
+			next_unit.use_outer_scope = @use_outer_scope
+			@_shift @scope, next_unit.scope
 		Units.CurrentContinuation = next_unit.scope
 		try
 			next_unit.block.apply(next_unit.scope, args)

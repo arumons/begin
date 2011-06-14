@@ -1,5 +1,5 @@
-begin = require('../src/begin').begin
-def = require('../src/begin').def
+begin = require('../..').begin
+def = require('../..').def
 
 #basic
 exports.begin_next_1 = (test) ->

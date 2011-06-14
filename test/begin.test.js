@@ -1,7 +1,7 @@
 (function() {
   var begin, def;
-  begin = require('../src/begin').begin;
-  def = require('../src/begin').def;
+  begin = require('../..').begin;
+  def = require('../..').def;
   exports.begin_next_1 = function(test) {
     test.expect(1);
     return begin(function() {

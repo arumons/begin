@@ -1,4 +1,3 @@
-util = require('util')
 begin = require('../src/begin').begin
 def = require('../src/begin').def
 
@@ -91,8 +90,14 @@ exports.next_and_throw_1 = (test) ->
 	test.expect 2
 	begin(->
 		@throw 1, 2)
-	._(-> @next)
-	._(-> @throw)
+	._(->
+		# never arrive
+		throw Error
+		@next)
+	._(->
+		# never arrive
+		throw Error
+		@throw)
 	.catch((v1, v2) ->
 		test.equal v1, 1
 		test.equal v2, 2
@@ -105,8 +110,14 @@ exports.next_and_throw_2 = (test) ->
 	test.expect 2
 	begin(->
 		@next 1, 2)
-	.catch(-> @next())
-	.catch(-> @throw())
+	.catch(->
+		# never arrive	
+		throw error
+		@next())
+	.catch(->
+		# never arrive
+		throw error
+		@throw())
 	._((v1, v2) ->
 		test.equal v1, 1
 		test.equal v2, 2
@@ -169,7 +180,7 @@ exports.scope_2 = (test) ->
 		@next())
 	.end()
 
-#next to return
+#inner scope to outer scope with @next
 exports.return_1 = (test) ->
 	test.expect 1
 	begin(->
@@ -181,7 +192,7 @@ exports.return_1 = (test) ->
 		test.done())
 	.end()
 
-#throw to return
+#inner scope to outer scope with @throw
 exports.return_2 = (test) ->
 	test.expect 1
 	begin(->
@@ -191,6 +202,48 @@ exports.return_2 = (test) ->
 	.catch((v) ->
 		test.equal v, 10
 		test.done())
+	.end()
+	
+#inner scope can use outer scope
+exports.use_outer_scope_1 = (test) ->
+	test.expect 2
+	begin ->
+		@a = 10
+		begin ->
+			test.equal @a, 10
+			@next()
+		.end()
+	._ ->
+		test.equal @a, 10
+		test.done()
+	.end()
+
+#inner scope can use outer scope
+exports.use_outer_scope_2 = (test) ->
+	test.expect 2
+	begin ->
+		@a = 10
+		begin ->
+			test.equal @a, 10
+			@throw()
+		.end()
+	.catch ->
+		test.equal @a, 10
+		test.done()
+	.end()
+
+#inner scope can use outer scope
+exports.use_outer_scope_3 = (test) ->
+	test.expect 2
+	begin ->
+		@a = 10
+		begin ->
+			test.equal @a, 10
+			@return()
+		.end()
+	._ ->
+		test.equal @a, 10
+		test.done()
 	.end()
 
 #def
@@ -503,12 +556,30 @@ exports.reduce_3 = (test) ->
 exports.reduce_4 = (test) ->
 	test.expect 2
 	begin([1,2,3]).reduce((pv, cv) ->
-		@a = 10
+		@a = 20
 		@next pv * cv)
 	._((v) ->
-		test.equal @a, 10
+		console.log 4, @
+		test.equal @a, 20
 		test.equal v, 6
 		test.done())
+	.end()
+
+exports.reduce_5 = (test) ->
+	test.expect 2
+	f = def (pv, cv) ->
+			console.log 'def', @
+			@a = 10
+			@next pv * cv
+		.end()
+
+	begin([1,2,3]).reduce(f)
+	._ (v) ->
+		console.log @
+		test.equal @a, undefined
+		test.equal v, 6
+		test.done()
+		@next()
 	.end()
 	
 

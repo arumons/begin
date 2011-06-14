@@ -1,4 +1,4 @@
-{begin, def} = require '../src/begin'
+{begin, def} = require '../..'
 fs = require 'fs'
 
 pattern = process.argv[2]

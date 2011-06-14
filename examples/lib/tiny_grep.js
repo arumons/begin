@@ -1,9 +1,9 @@
 (function() {
   var begin, def, files, fs, pattern, _ref;
-  _ref = require('../src/begin'), begin = _ref.begin, def = _ref.def;
+  _ref = require('../..'), begin = _ref.begin, def = _ref.def;
   fs = require('fs');
-  pattern = process.argv.slice(2)[0];
-  files = process.argv.slice(3);
+  pattern = process.argv[2];
+  files = process.argv[3];
   begin(files).each(function(file) {
     return fs.readFile(file, 'utf8', this.next);
   }).each(function(error, data) {

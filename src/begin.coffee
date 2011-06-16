@@ -4,18 +4,35 @@
 # Manage a scope
 class Scope
 	constructor: (unit) ->
-		
+		jumped = false
+		_err_msg = "you can call scope transition function only once in a scope"
+		_pre_scope_transition_function = ->
+			if jumped
+				throw new Error _err_msg
+			jumped = true
+
 		# Jump to the next "catch" scope
-		@throw= (args...) ->
+		@throw = (args...) ->
+			_pre_scope_transition_function()
 			unit.throw.apply unit, args
+			unit
 
 		# Jump to outer scope
 		@return = (args...) ->
+			_pre_scope_transition_function()
 			unit.return.apply unit, args
+			unit
 
 		# jump to "_" scope
 		@next = (args...) ->
+			_pre_scope_transition_function()
 			unit.next.apply unit, args
+			unit
+
+		@_ = (block) ->
+			self = @
+			block.call self
+			unit
 
 # Manage transitioning to the next scope
 class Unit
@@ -105,7 +122,8 @@ class Unit
 			@_shift @scope, next_unit.scope
 		Units.CurrentContinuation = next_unit.scope
 		try
-			next_unit.block.apply next_unit.scope, args
+			if next_unit isnt next_unit.block.apply next_unit.scope, args
+				throw new Error "you must call scope trasition function at end of scope."
 			Units.CurrentContinuation = undefined
 		catch error
 			@_skip_scope next_unit, 'throw', [error]
@@ -156,6 +174,7 @@ class ArrayUnits
 		if not thisp?
 			thisp = global
 		if block.is_defed
+			console.log 'come?'
 			defed = block
 		else
 			defed = macro(block).end()
@@ -170,11 +189,11 @@ class ArrayUnits
 		result = []
 		new Units (_arrays...) ->
 			arrays.apply(null, _arrays).each((args...) ->
-				units._ (-> defed.apply(thisp, args))
+				units._ (-> @_ -> defed.apply(thisp, args))
 				units._((v) -> result.push(args.slice(0, -2)) if v; @next()))
 			units._ ->
 				@next.apply @, Arrays.zip result
-			units.end()
+			@_ -> units.end()
 
 	# Returning array which consist of value returned by the block
 	# thisp was injected to @self in the block
@@ -183,37 +202,37 @@ class ArrayUnits
 		result = []
 		new Units (_arrays...) ->
 			arrays.apply(null, _arrays).each((args...) ->
-				units._ (-> defed.apply(thisp, args))
+				units._ (-> @_ -> defed.apply(thisp, args))
 				units._((args...) -> result.push args; @next()))
 			units._ ->
 				@next.apply @, Arrays.zip result
-			units.end()
+			@_ -> units.end()
 
   	# Return true if function return true to all value in the array
 	every: (block, thisp) ->
 		{defed, thisp, units} = @_prepare(block, thisp)
 		new Units (array) ->
 			array.forEach (item, index, array) ->
-				units._((-> defed.call(thisp, item, index, array)))
+				units._((-> @_ -> defed.call(thisp, item, index, array)))
 					 ._ (v) ->
 							if not v
 								@return false
 							else
 								@next()
-			units._(-> @return true).end()
+			@_ -> units._(-> @return true).end()
 
 	# Return true if function return true to any value in the array
 	some: (block, thisp) ->
 		{defed, thisp, units} = @_prepare(block, thisp)
 		new Units (array) ->
 			array.forEach (item, index, array) ->
-				units._((-> defed.call(thisp, item, index, array)))
+				units._((-> @_ -> defed.call(thisp, item, index, array)))
 					 ._ (v) ->
 							if v
 							    @return true
 							else
 								@next()
-			units._(-> @return false).end()
+			@_ -> units._(-> @return false).end()
 
 	# Apply a function an accumulator and each value of the array (left-to-right)
 	reduce: (block, init, reverse) ->
@@ -312,13 +331,15 @@ class Def
 	end: ->
 		factory = @factory
 		use_outer_scope = @use_outer_scope
-		(args...) ->
-			self = @
-			begin (->
-				@next.apply @, args)
-				, self, use_outer_scope
-			._(factory())
-			.end()
+		defed = (args...) ->
+					self = @
+					begin (->
+						@next.apply @, args)
+						, self, use_outer_scope
+					._(factory())
+					.end()
+		defed.is_defed = true
+		defed
 
 # Receive Array or (block, thisp, use_outer_scope)
 begin = (args...) ->

@@ -1,7 +1,9 @@
 (function() {
-  var begin, def;
-  begin = require('../..').begin;
-  def = require('../..').def;
+  var begin, def, macro, util;
+  begin = require('..').begin;
+  def = require('..').def;
+  macro = require('..').macro;
+  util = require('util');
   exports.begin_next_1 = function(test) {
     test.expect(1);
     return begin(function() {
@@ -27,7 +29,8 @@
       return this.next(1);
     })._(function(v) {
       test.equal(v, 1);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.begin_next_4 = function(test) {
@@ -37,7 +40,8 @@
     })._(function(v1, v2) {
       test.equal(v1, 1);
       test.equal(v2, 2);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.begin_throw_1 = function(test) {
@@ -46,7 +50,8 @@
       return this["throw"]();
     })["catch"](function() {
       test.ok(true, 'catch success');
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.begin_throw_2 = function(test) {
@@ -56,7 +61,8 @@
       return this["throw"]();
     })["catch"](function() {
       test.ok('true', 'two');
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.begin_throw_3 = function(test) {
@@ -65,7 +71,8 @@
       return this["throw"](1);
     })["catch"](function(v) {
       test.equal(v, 1);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.begin_throw_4 = function(test) {
@@ -75,7 +82,8 @@
     })["catch"](function(v1, v2) {
       test.equal(v1, 1);
       test.equal(v2, 2);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.next_and_throw_1 = function(test) {
@@ -167,62 +175,77 @@
   exports.return_1 = function(test) {
     test.expect(1);
     return begin(function() {
-      return begin(function() {
-        return this.next(10);
-      }).end();
+      return this._(function() {
+        return begin(function() {
+          return this.next(10);
+        }).end();
+      });
     })._(function(v) {
       test.equal(v, 10);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.return_2 = function(test) {
     test.expect(1);
     return begin(function() {
-      return begin(function() {
-        return this["throw"](10);
-      }).end();
+      return this._(function() {
+        return begin(function() {
+          return this["throw"](10);
+        }).end();
+      });
     })["catch"](function(v) {
       test.equal(v, 10);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.use_outer_scope_1 = function(test) {
     test.expect(2);
     return begin(function() {
       this.a = 10;
-      return begin(function() {
-        test.equal(this.a, 10);
-        return this.next();
-      }).end();
+      return this._(function() {
+        return begin(function() {
+          test.equal(this.a, 10);
+          return this.next();
+        }).end();
+      });
     })._(function() {
       test.equal(this.a, 10);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.use_outer_scope_2 = function(test) {
     test.expect(2);
     return begin(function() {
       this.a = 10;
-      return begin(function() {
-        test.equal(this.a, 10);
-        return this["throw"]();
-      }).end();
+      return this._(function() {
+        return begin(function() {
+          test.equal(this.a, 10);
+          return this["throw"]();
+        }).end();
+      });
     })["catch"](function() {
       test.equal(this.a, 10);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.use_outer_scope_3 = function(test) {
     test.expect(2);
     return begin(function() {
       this.a = 10;
-      return begin(function() {
-        test.equal(this.a, 10);
-        return this["return"]();
-      }).end();
+      return this._(function() {
+        return begin(function() {
+          test.equal(this.a, 10);
+          return this["return"]();
+        }).end();
+      });
     })._(function() {
       test.equal(this.a, 10);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.def_1 = function(test) {
@@ -231,10 +254,13 @@
       return this.next(1);
     }).end();
     return begin(function() {
-      return t();
+      return this._(function() {
+        return t();
+      });
     })._(function(v) {
       test.equal(v, 1);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.def_2 = function(test) {
@@ -244,10 +270,13 @@
       return this.next(v * 3);
     }).end();
     return begin(function() {
-      return t(3);
+      return this._(function() {
+        return t(3);
+      });
     })._(function(v) {
       test.equal(v, 9);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.def_3 = function(test) {
@@ -258,10 +287,13 @@
       return this.next();
     }).end();
     return begin(function() {
-      return t(10);
+      return this._(function() {
+        return t(10);
+      });
     })._(function() {
       test.equal(void 0, this.test);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.def_4 = function(test) {
@@ -271,28 +303,35 @@
       return this.next(v * 3);
     }).end();
     t2 = def(function(v) {
-      return t(v);
+      return this._(function() {
+        return t(v);
+      });
     }).end();
     return begin(function() {
-      return t2(5);
+      return this._(function() {
+        return t2(5);
+      });
     })._(function(v) {
       test.equal(v, 15);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.return_1 = function(test) {
     test.expect(2);
     return begin(function() {
-      return begin(function() {
-        this.a = 10;
-        return this["return"]();
-      })._(function() {
-        test.ok(true, 'not come');
-        return this["throw"]();
-      })["catch"](function() {
-        test.ok(true, 'not come');
-        return this.next();
-      }).end();
+      return this._(function() {
+        return begin(function() {
+          this.a = 10;
+          return this["return"]();
+        })._(function() {
+          test.ok(true, 'not come');
+          return this["throw"]();
+        })["catch"](function() {
+          test.ok(true, 'not come');
+          return this.next();
+        }).end();
+      });
     })._(function() {
       test.ok(true, 'only come');
       test.equal(this.a, 10);
@@ -324,7 +363,8 @@
     })._(function(lst) {
       test.equal(this.a, 10);
       test.deepEqual(lst, [2]);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.filter_2 = function(test) {
@@ -335,7 +375,8 @@
       return this.next(v % 2 === 1);
     })._(function(lst) {
       test.deepEqual(lst, [1, 3]);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.filter_3 = function(test) {
@@ -346,7 +387,8 @@
       return this.next(v % 2 === 1);
     })._(function(lst) {
       test.deepEqual(lst, [1, 3]);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.filter_4 = function(test) {
@@ -367,9 +409,9 @@
       this.test = 30;
       return this.next(true);
     }).end();
-    return begin([1]).filter(a)._(function(lst) {
+    return begin([5]).filter(a)._(function(lst) {
       test.equal(this.test, void 0);
-      test.deepEqual(lst, [1]);
+      test.deepEqual(lst, [5]);
       test.done();
       return this.next();
     }).end();
@@ -382,7 +424,8 @@
     })._(function(lst) {
       test.equal(this.a, 10);
       test.deepEqual(lst, [2, 4, 6]);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.each_2 = function(test) {
@@ -393,7 +436,8 @@
       return this.next(v * 2);
     })._(function(lst) {
       test.deepEqual(lst, [2, 4, 6]);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.each_3 = function(test) {
@@ -404,7 +448,8 @@
       return this.next(v * 3);
     })._(function(lst) {
       test.deepEqual(lst, [3, 6, 9]);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.each_4 = function(test) {
@@ -415,7 +460,20 @@
     })._(function(lst) {
       test.equal(this.a, 10);
       test.deepEqual(lst, [2, 4, 6]);
-      return test.done();
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.each_5 = function(test) {
+    var a;
+    test.expect(1);
+    a = def(function(v) {
+      return this.next(v * v);
+    }).end();
+    return begin([1, 2, 3]).each(a)._(function(lst) {
+      test.deepEqual(lst, [1, 4, 9]);
+      test.done();
+      return this.next();
     }).end();
   };
   exports.every_1 = function(test) {
@@ -424,7 +482,8 @@
       return this.next(v < 5);
     })._(function(v) {
       test.equal(true, v);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.every_2 = function(test) {
@@ -435,7 +494,8 @@
       return this.next(v % 2 === 1);
     })._(function(v) {
       test.equal(false, v);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.every_3 = function(test) {
@@ -446,7 +506,8 @@
       return this.next(v < 4);
     })._(function(v) {
       test.equal(true, v);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.every_4 = function(test) {
@@ -457,7 +518,20 @@
     })._(function(v) {
       test.equal(this.a, 10);
       test.equal(v, false);
-      return test.done();
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.every_5 = function(test) {
+    var a;
+    test.expect(1);
+    a = def(function(v) {
+      return this.next(v > 0);
+    }).end();
+    return begin([1, 2, 3]).every(a)._(function(v) {
+      test.equal(v, true);
+      test.done();
+      return this.next();
     }).end();
   };
   exports.some_1 = function(test) {
@@ -466,7 +540,8 @@
       return this.next(v === 2);
     })._(function(v) {
       test.equal(true, v);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.some_2 = function(test) {
@@ -477,7 +552,8 @@
       return this.next(v === 1);
     })._(function(v) {
       test.equal(v, true);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.some_3 = function(test) {
@@ -488,7 +564,8 @@
       return this.next(v > 4);
     })._(function(v) {
       test.equal(v, false);
-      return test.done();
+      test.done();
+      return this.next();
     }).end();
   };
   exports.some_4 = function(test) {
@@ -499,108 +576,20 @@
     })._(function(v) {
       test.equal(this.a, 10);
       test.equal(v, false);
-      return test.done();
-    }).end();
-  };
-  exports.reduce_1 = function(test) {
-    test.expect(1);
-    return begin([1, 2, 3]).reduce(function(pv, cv) {
-      return this.next(pv * cv);
-    })._(function(v) {
-      test.equal(v, 6);
-      return test.done();
-    }).end();
-  };
-  exports.reduce_2 = function(test) {
-    test.expect(1);
-    return begin(function() {
-      return this.next([1, 2, 3]);
-    }).reduce((function(pv, cv) {
-      return this.next(pv * cv);
-    }), 4)._(function(v) {
-      test.equal(v, 24);
-      return test.done();
-    }).end();
-  };
-  exports.reduce_3 = function(test) {
-    test.expect(1);
-    return begin(function() {
-      return this.next(100);
-    })._([1, 2, 3]).reduce(function(pv, cv) {
-      return this.next(pv * cv);
-    }, 4)._(function(v) {
-      test.equal(v, 24);
-      return test.done();
-    }).end();
-  };
-  exports.reduce_4 = function(test) {
-    test.expect(2);
-    return begin([1, 2, 3]).reduce(function(pv, cv) {
-      this.a = 20;
-      return this.next(pv * cv);
-    })._(function(v) {
-      console.log(4, this);
-      test.equal(this.a, 20);
-      test.equal(v, 6);
-      return test.done();
-    }).end();
-  };
-  exports.reduce_5 = function(test) {
-    var f;
-    test.expect(2);
-    f = def(function(pv, cv) {
-      console.log('def', this);
-      this.a = 10;
-      return this.next(pv * cv);
-    }).end();
-    return begin([1, 2, 3]).reduce(f)._(function(v) {
-      console.log(this);
-      test.equal(this.a, void 0);
-      test.equal(v, 6);
       test.done();
       return this.next();
     }).end();
   };
-  exports.reduceRight_1 = function(test) {
+  exports.some_5 = function(test) {
+    var a;
     test.expect(1);
-    return begin([1, 2, 3]).reduceRight(function(pv, cv) {
-      return this.next(pv - cv);
-    })._(function(v) {
-      test.equal(v, 0);
-      return test.done();
+    a = def(function(v) {
+      return this.next(v > 2);
     }).end();
-  };
-  exports.reduceRight_2 = function(test) {
-    test.expect(1);
-    return begin(function() {
-      return this.next([1, 2, 3]);
-    }).reduceRight(function(pv, cv) {
-      return this.next(pv - cv);
-    }, 4)._(function(v) {
-      test.equal(v, -2);
-      return test.done();
-    }).end();
-  };
-  exports.reduceRight_3 = function(test) {
-    test.expect(1);
-    return begin(function() {
-      return this.next(100);
-    })._([1, 2, 3, 4]).reduceRight(function(pv, cv) {
-      return this.next(pv - cv);
-    })._(function(v) {
-      test.equal(v, -2);
-      return test.done();
-    }).end();
-  };
-  exports.reduceRight_4 = function(test) {
-    test.expect(2);
-    return begin([1, 2, 3]).reduceRight(function(pv, cv) {
-      this.a = 10;
-      return this.next(pv - cv);
-    })._(function(v) {
-      test.equal(v, 0);
-      test.equal(this.a, 10);
-      return test.done();
+    return begin([1, 2, 3]).some(a)._(function(v) {
+      test.equal(v, true);
+      test.done();
+      return this.next();
     }).end();
   };
 }).call(this);

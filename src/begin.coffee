@@ -18,9 +18,9 @@ class Scope
 			unit
 
 		# Jump to outer scope
-		@return = (args...) ->
+		@out = (args...) ->
 			_pre_scope_transition_function()
-			unit.return.apply unit, args
+			unit.out.apply unit, args
 			unit
 
 		# jump to "_" scope
@@ -65,7 +65,7 @@ class Unit
 			Units.CurrentContinuation = undefined
 			process.nextTick -> throw args[0]
 
-		@return = (args...) ->
+		@out = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
 			if continuation?
@@ -82,8 +82,8 @@ class Unit
 		@throw = (args...) ->
 			@_skip_scope unit, 'throw', args
 
-		@return = (args...) ->
-			@_skip_scope unit, 'return', args
+		@out = (args...) ->
+			@_skip_scope unit, 'out', args
 
 		@next_unit = unit
 		unit.previous_unit = @
@@ -98,8 +98,8 @@ class Unit
 		@throw = (args...) ->
 			@_next_scope unit, args
 
-		@return = (args...) ->
-			@_skip_scope unit, 'return', args
+		@out = (args...) ->
+			@_skip_scope unit, 'out', args
 
 		@next_unit = unit
 		unit.previous_unit = @
@@ -215,10 +215,10 @@ class ArrayUnits
 				units._((-> @_ -> defed.call(thisp, item, index, array)))
 					 ._ (v) ->
 							if not v
-								@return false
+								@out false
 							else
 								@next()
-			@_ -> units._(-> @return true).end()
+			@_ -> units._(-> @out true).end()
 
 	# Return true if function return true to any value in the array
 	some: (block, thisp) ->
@@ -228,10 +228,10 @@ class ArrayUnits
 				units._((-> @_ -> defed.call(thisp, item, index, array)))
 					 ._ (v) ->
 							if v
-							    @return true
+							    @out true
 							else
 								@next()
-			@_ -> units._(-> @return false).end()
+			@_ -> units._(-> @out false).end()
 
 	# Apply a function an accumulator and each value of the array (left-to-right)
 	reduce: (block, init, reverse) ->

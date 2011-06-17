@@ -35,7 +35,7 @@ exports.begin_next_3 = (test) ->
 		@next()
 	.end()
 
-##multi argument passing
+#multi argument passing
 exports.begin_next_4 = (test) ->
 	test.expect(2)
 	begin ->
@@ -47,7 +47,7 @@ exports.begin_next_4 = (test) ->
 		@next()
 	.end()
 
-##basic
+#basic
 exports.begin_throw_1 = (test) ->
 	test.expect(1)
 	begin ->
@@ -58,7 +58,7 @@ exports.begin_throw_1 = (test) ->
 		@next()
 	.end()
 
-##chain
+#chain
 exports.begin_throw_2 = (test) ->
 	test.expect 2
 	begin ->
@@ -70,7 +70,7 @@ exports.begin_throw_2 = (test) ->
 		@next()
 	.end()
 
-##argument passing
+#argument passing
 exports.begin_throw_3 = (test) ->
 	test.expect(1)
 	begin ->
@@ -81,7 +81,7 @@ exports.begin_throw_3 = (test) ->
 		@next()
 	.end()
 
-##multi argument passing
+#multi argument passing
 exports.begin_throw_4 = (test) ->
 	test.expect 2
 	begin ->
@@ -93,7 +93,7 @@ exports.begin_throw_4 = (test) ->
 		@next()
 	.end()
 	
-##next and throw mix
+#next and throw mix
 exports.next_and_throw_1 = (test) ->
 	test.expect 2
 	begin ->
@@ -113,7 +113,7 @@ exports.next_and_throw_1 = (test) ->
 		@next()
 	.end()
 
-##next and throw mix
+#next and throw mix
 exports.next_and_throw_2 = (test) ->
 	test.expect 2
 	begin ->
@@ -159,7 +159,7 @@ exports.real_throw_2 = (test) ->
 		@next())
 	.end()
 
-##test @ scope
+#test @ scope
 exports.scope_1 = (test) ->
 	test.expect 1
 	begin(->
@@ -170,8 +170,8 @@ exports.scope_1 = (test) ->
 		test.done()
 		@next())
 	.end()
-#
-##test @ scope multi
+
+#test @ scope multi
 exports.scope_2 = (test) ->
 	test.expect 3
 	begin ->
@@ -188,8 +188,8 @@ exports.scope_2 = (test) ->
 		@next()
 	.end()
 
-##inner scope to outer scope with @next
-exports.return_1 = (test) ->
+#inner scope to outer scope with @next
+exports.outer_1 = (test) ->
 	test.expect 1
 	begin ->
 		@_ ->
@@ -202,8 +202,8 @@ exports.return_1 = (test) ->
 		@next()
 	.end()
 
-#inner scope to outer scope with @throw
-exports.return_2 = (test) ->
+##inner scope to outer scope with @throw
+exports.outer_2 = (test) ->
 	test.expect 1
 	begin ->
 		@_ ->
@@ -256,7 +256,7 @@ exports.use_outer_scope_3 = (test) ->
 		@_ ->
 			begin ->
 				test.equal @a, 10
-				@return()
+				@out()
 			.end()
 	._ ->
 		test.equal @a, 10
@@ -329,13 +329,13 @@ exports.def_4 = (test) ->
 		@next()
 	.end()
 
-# return skip all _ and catch
-exports.return_1 = (test) ->
+# out skip all _ and catch
+exports.out_1 = (test) ->
 	test.expect 2
 	begin(->
 		@_ -> begin(->
 				@a = 10
-				@return())
+				@out())
 			._(-> test.ok true, 'not come'; @throw())
 			.catch(-> test.ok true, 'not come'; @next())
 			.end())
@@ -346,6 +346,7 @@ exports.return_1 = (test) ->
 		@next()
 	.end()
 
+# receiver inject to @self
 exports.def_with_receiver_1 = (test) ->
 	test.expect 3
 	obj = {a:1,b:2}
@@ -358,6 +359,7 @@ exports.def_with_receiver_1 = (test) ->
 	.end()
 	obj.t(10)
 
+# filtering value by the provided function
 exports.filter_1 = (test) ->
 	test.expect 2
 	begin([1, 2, 3]).filter((v) ->
@@ -370,6 +372,7 @@ exports.filter_1 = (test) ->
 		@next()
 	.end()
 
+# begin [..] equal begin -> @next [..]
 exports.filter_2 = (test) ->
 	test.expect 1
 	begin ->
@@ -382,6 +385,7 @@ exports.filter_2 = (test) ->
 		@next()
 	.end()
 
+# _ also accept array
 exports.filter_3 = (test) ->
 	test.expect 1
 	begin ->
@@ -394,6 +398,7 @@ exports.filter_3 = (test) ->
 		@next()
 	.end()
 
+# scope in filter succeed to next scope
 exports.filter_4 = (test) ->
 	test.expect 1
 	begin([1]).filter (v) ->
@@ -405,6 +410,7 @@ exports.filter_4 = (test) ->
 		@next()
 	.end()
 
+# filter accept defed
 exports.filter_5 = (test) ->
 	test.expect 2
 	a = def (v) ->
@@ -416,6 +422,38 @@ exports.filter_5 = (test) ->
 	._ (lst) ->
 		test.equal @test, undefined
 		test.deepEqual lst, [5]
+		test.done()
+		@next()
+	.end()
+
+# throw called from filter jump to catch
+exports.filter_6 = (test) ->
+	test.expect 1
+	begin([1]).filter (v) ->
+		@throw true
+	._ (v) ->
+		@next false
+	.catch (v) ->
+		test.ok v, 'catched'
+		test.done()
+		@next()
+	.end()
+
+# 
+exports.filter_7 = (test) ->
+	test.expect 2
+	begin ->
+		@_ ->
+			begin([1, 2]).filter (v) ->
+		        @out true
+			._ (v) ->
+				test.deepEqual v, [1,2]
+				@next true
+			.catch (v) ->
+				@next false
+			.end()
+	._ (v) ->
+		test.ok v, 'catched'
 		test.done()
 		@next()
 	.end()

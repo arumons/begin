@@ -172,7 +172,7 @@
       return this.next();
     }).end();
   };
-  exports.return_1 = function(test) {
+  exports.outer_1 = function(test) {
     test.expect(1);
     return begin(function() {
       return this._(function() {
@@ -186,7 +186,7 @@
       return this.next();
     }).end();
   };
-  exports.return_2 = function(test) {
+  exports.outer_2 = function(test) {
     test.expect(1);
     return begin(function() {
       return this._(function() {
@@ -239,7 +239,7 @@
       return this._(function() {
         return begin(function() {
           test.equal(this.a, 10);
-          return this["return"]();
+          return this.out();
         }).end();
       });
     })._(function() {
@@ -317,13 +317,13 @@
       return this.next();
     }).end();
   };
-  exports.return_1 = function(test) {
+  exports.out_1 = function(test) {
     test.expect(2);
     return begin(function() {
       return this._(function() {
         return begin(function() {
           this.a = 10;
-          return this["return"]();
+          return this.out();
         })._(function() {
           test.ok(true, 'not come');
           return this["throw"]();
@@ -412,6 +412,37 @@
     return begin([5]).filter(a)._(function(lst) {
       test.equal(this.test, void 0);
       test.deepEqual(lst, [5]);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.filter_6 = function(test) {
+    test.expect(1);
+    return begin([1]).filter(function(v) {
+      return this["throw"](true);
+    })._(function(v) {
+      return this.next(false);
+    })["catch"](function(v) {
+      test.ok(v, 'catched');
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.filter_7 = function(test) {
+    test.expect(2);
+    return begin(function() {
+      return this._(function() {
+        return begin([1, 2]).filter(function(v) {
+          return this.out(true);
+        })._(function(v) {
+          test.deepEqual(v, [1, 2]);
+          return this.next(true);
+        })["catch"](function(v) {
+          return this.next(false);
+        }).end();
+      });
+    })._(function(v) {
+      test.ok(v, 'catched');
       test.done();
       return this.next();
     }).end();

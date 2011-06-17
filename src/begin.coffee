@@ -174,7 +174,6 @@ class ArrayUnits
 		if not thisp?
 			thisp = global
 		if block.is_defed
-			console.log 'come?'
 			defed = block
 		else
 			defed = macro(block).end()
@@ -259,10 +258,10 @@ class ArrayUnits
 				_array = array.slice(2)
 
 			_array.forEach((item) ->
-				units._((v1, v2, i, array) -> defed.call global, v1, v2, i, array)
+				units._((v1, v2, i, array) -> @_ -> defed.call global, v1, v2, i, array)
 					 ._((v) -> @next v, item, i++, array))
-			units._((v1, v2, i, array) -> defed.call global, v1, v2, i, array)
-			units._((result) -> @next result).end()
+			units._((v1, v2, i, array) -> @_ -> defed.call global, v1, v2, i, array)
+			@_ -> units._((result) -> @next result).end()
 
 	# Apply a function an accumulator and each value of the array (right-to-left)
 	reduceRight: (block, init) ->

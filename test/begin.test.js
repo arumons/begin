@@ -592,4 +592,110 @@
       return this.next();
     }).end();
   };
+  exports.reduce_1 = function(test) {
+    test.expect(1);
+    return begin([1, 2, 3]).reduce(function(pv, cv) {
+      return this.next(pv * cv);
+    })._(function(v) {
+      test.equal(v, 6);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduce_2 = function(test) {
+    test.expect(1);
+    return begin(function() {
+      return this.next([1, 2, 3]);
+    }).reduce((function(pv, cv) {
+      return this.next(pv * cv);
+    }), 4)._(function(v) {
+      test.equal(v, 24);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduce_3 = function(test) {
+    test.expect(1);
+    return begin(function() {
+      return this.next(100);
+    })._([1, 2, 3]).reduce(function(pv, cv) {
+      return this.next(pv * cv);
+    }, 4)._(function(v) {
+      test.equal(v, 24);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduce_4 = function(test) {
+    test.expect(2);
+    return begin([1, 2, 3]).reduce(function(pv, cv) {
+      this.a = 20;
+      return this.next(pv * cv);
+    })._(function(v) {
+      test.equal(this.a, 20);
+      test.equal(v, 6);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduce_5 = function(test) {
+    var f;
+    test.expect(2);
+    f = def(function(pv, cv) {
+      this.a = 10;
+      return this.next(pv * cv);
+    }).end();
+    return begin([1, 2, 3]).reduce(f)._(function(v) {
+      test.equal(this.a, void 0);
+      test.equal(v, 6);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduceRight_1 = function(test) {
+    test.expect(1);
+    return begin([1, 2, 3]).reduceRight(function(pv, cv) {
+      return this.next(pv - cv);
+    })._(function(v) {
+      test.equal(v, 0);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduceRight_2 = function(test) {
+    test.expect(1);
+    return begin(function() {
+      return this.next([1, 2, 3]);
+    }).reduceRight(function(pv, cv) {
+      return this.next(pv - cv);
+    }, 4)._(function(v) {
+      test.equal(v, -2);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduceRight_3 = function(test) {
+    test.expect(1);
+    return begin(function() {
+      return this.next(100);
+    })._([1, 2, 3, 4]).reduceRight(function(pv, cv) {
+      return this.next(pv - cv);
+    })._(function(v) {
+      test.equal(v, -2);
+      test.done();
+      return this.next();
+    }).end();
+  };
+  exports.reduceRight_4 = function(test) {
+    test.expect(2);
+    return begin([1, 2, 3]).reduceRight(function(pv, cv) {
+      this.a = 10;
+      return this.next(pv - cv);
+    })._(function(v) {
+      test.equal(v, 0);
+      test.equal(this.a, 10);
+      test.done();
+      return this.next();
+    }).end();
+  };
 }).call(this);

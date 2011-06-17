@@ -599,107 +599,112 @@ exports.some_5 = (test) ->
 		@next()
 	.end()
 
-#exports.reduce_1 = (test) ->
-#	test.expect 1
-#	begin([1,2,3]).reduce((pv, cv) ->
-#		@next pv * cv)
-#	._((v) ->
-#		test.equal v, 6
-#		test.done())
-#	.end()
-#
-#exports.reduce_2 = (test) ->
-#	test.expect 1
-#	begin(->
-#		@next [1,2,3])
-#	.reduce(((pv, cv) ->
-#		@next pv * cv), 4)
-#	._((v) ->
-#		test.equal v, 24
-#		test.done())
-#	.end()
-#
-#exports.reduce_3 = (test) ->
-#	test.expect 1
-#	begin(->
-#		@next 100)
-#	._([1,2,3]).reduce((pv, cv) ->
-#		@next pv * cv
-#	, 4)
-#	._((v) ->
-#		test.equal v, 24
-#		test.done())
-#	.end()
-#
-#exports.reduce_4 = (test) ->
-#	test.expect 2
-#	begin([1,2,3]).reduce((pv, cv) ->
-#		@a = 20
-#		@next pv * cv)
-#	._((v) ->
-#		console.log 4, @
-#		test.equal @a, 20
-#		test.equal v, 6
-#		test.done())
-#	.end()
-#
-#exports.reduce_5 = (test) ->
-#	test.expect 2
-#	f = def (pv, cv) ->
-#			console.log 'def', @
-#			@a = 10
-#			@next pv * cv
-#		.end()
-#
-#	begin([1,2,3]).reduce(f)
-#	._ (v) ->
-#		console.log @
-#		test.equal @a, undefined
-#		test.equal v, 6
-#		test.done()
-#		@next()
-#	.end()
-#	
-#
-#exports.reduceRight_1 = (test) ->
-#	test.expect 1
-#	begin([1,2,3]).reduceRight((pv, cv) ->
-#		@next pv - cv)
-#	._((v) ->
-#		test.equal v, 0
-#		test.done())
-#	.end()
-#
-#exports.reduceRight_2 = (test) ->
-#	test.expect 1
-#	begin(->
-#		@next [1,2,3])
-#	.reduceRight((pv, cv) ->
-#		@next pv - cv
-#	, 4)
-#	._((v) ->
-#		test.equal v, -2
-#		test.done())
-#	.end()
-#
-#exports.reduceRight_3 = (test) ->
-#	test.expect 1
-#	begin(->
-#		@next 100)
-#	._([1,2,3,4]).reduceRight((pv, cv) ->
-#		@next pv - cv)
-#	._((v) ->
-#		test.equal v, -2
-#		test.done())
-#	.end()
-#
-#exports.reduceRight_4 = (test) ->
-#	test.expect 2
-#	begin([1,2,3]).reduceRight((pv, cv) ->
-#		@a = 10
-#		@next pv - cv)
-#	._((v) ->
-#		test.equal v, 0
-#		test.equal @a, 10
-#		test.done())
-#	.end()
+exports.reduce_1 = (test) ->
+	test.expect 1
+	begin([1,2,3]).reduce (pv, cv) ->
+		@next pv * cv
+	._ (v) ->
+		test.equal v, 6
+		test.done()
+		@next()
+	.end()
+
+exports.reduce_2 = (test) ->
+	test.expect 1
+	begin ->
+		@next [1,2,3]
+	.reduce(((pv, cv) ->
+		@next pv * cv), 4)
+	._ (v) ->
+		test.equal v, 24
+		test.done()
+		@next()
+	.end()
+
+exports.reduce_3 = (test) ->
+	test.expect 1
+	begin ->
+		@next 100
+	._([1,2,3]).reduce((pv, cv) ->
+		@next pv * cv
+	, 4)
+	._ (v) ->
+		test.equal v, 24
+		test.done()
+		@next()
+	.end()
+
+exports.reduce_4 = (test) ->
+	test.expect 2
+	begin([1,2,3]).reduce((pv, cv) ->
+		@a = 20
+		@next pv * cv)
+	._ (v) ->
+		test.equal @a, 20
+		test.equal v, 6
+		test.done()
+		@next()
+	.end()
+
+exports.reduce_5 = (test) ->
+	test.expect 2
+	f = def (pv, cv) ->
+			@a = 10
+			@next pv * cv
+		.end()
+
+	begin([1,2,3]).reduce(f)
+	._ (v) ->
+		test.equal @a, undefined
+		test.equal v, 6
+		test.done()
+		@next()
+	.end()
+	
+
+exports.reduceRight_1 = (test) ->
+	test.expect 1
+	begin([1,2,3]).reduceRight((pv, cv) ->
+		@next pv - cv)
+	._ (v) ->
+		test.equal v, 0
+		test.done()
+		@next()
+	.end()
+
+exports.reduceRight_2 = (test) ->
+	test.expect 1
+	begin(->
+		@next [1,2,3])
+	.reduceRight((pv, cv) ->
+		@next pv - cv
+	, 4)
+	._ (v) ->
+		test.equal v, -2
+		test.done()
+		@next()
+	.end()
+
+exports.reduceRight_3 = (test) ->
+	test.expect 1
+	begin(->
+		@next 100)
+	._([1,2,3,4]).reduceRight((pv, cv) ->
+		@next pv - cv)
+	._ (v) ->
+		test.equal v, -2
+		test.done()
+		@next()
+	.end()
+
+exports.reduceRight_4 = (test) ->
+	test.expect 2
+	begin([1,2,3]).reduceRight((pv, cv) ->
+		@a = 10
+		@next pv - cv)
+	._ (v) ->
+		test.equal v, 0
+		test.equal @a, 10
+		test.done()
+		@next()
+	.end()

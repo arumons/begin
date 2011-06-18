@@ -8,21 +8,29 @@
   pattern = process.argv[3];
   find = def(function(dirname) {
     process.chdir(dirname);
-    return fs.readdir('.', this.next);
+    return this._(function() {
+      return fs.readdir('.', this.next);
+    });
   })._(function(error, files) {
     return this.next(files);
   }).each(function(file) {
-    return fs.realpath(file, this.next);
+    return this._(function() {
+      return fs.realpath(file, this.next);
+    });
   }).each(function(error, file) {
-    return fs.stat(file, __bind(function(err, stat) {
-      return this.next(err, stat, file);
-    }, this));
+    return this._(function() {
+      return fs.stat(file, __bind(function(err, stat) {
+        return this.next(err, stat, file);
+      }, this));
+    });
   }).each(function(err, stat, file) {
     if ((path.basename(file)).match(pattern)) {
       console.log(path.basename(file));
     }
     if (stat.isDirectory()) {
-      return find(file);
+      return this._(function() {
+        return find(file);
+      });
     } else {
       return this.next();
     }

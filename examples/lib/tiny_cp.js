@@ -5,8 +5,12 @@
   src = process.argv[2];
   dist = process.argv[3];
   begin(function() {
-    return fs.readFile(src, 'utf8', this.next);
+    return this._(function() {
+      return fs.readFile(src, 'utf8', this.next);
+    });
   })._(function(error, data) {
-    return fs.writeFile(dist, data, this.next);
+    return this._(function() {
+      return fs.writeFile(dist, data, this.next);
+    });
   }).end();
 }).call(this);

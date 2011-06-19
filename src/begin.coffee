@@ -1,16 +1,26 @@
 # This library is a flow control library for node.js and CoffeeScript.
 # For more information, please see https://github.com/arumons/begin .
 
+util = require 'util'
+
 # Manage a scope
 class Scope
 	constructor: (unit) ->
 		jumped = false
 		_err_msg = "you can call scope transition function only once in a scope"
 		_pre_scope_transition_function = ->
-			if jumped
-				throw new Error _err_msg
+			throw new Error _err_msg if jumped
 			jumped = true
 
+		_pre_iterator_function = (args) ->
+			_arrays = (arg for arg in args when Array.isArray arg)
+			fn = args[_arrays.length]
+			thisp = args[_arrays.length + 1] ? global
+			_arrays: _arrays
+			defed: if fn.is_defed then fn else macro(fn).end()
+			thisp: thisp
+			units: new Units((-> @next()), thisp, true)
+			 
 		# Jump to the next "catch" scope
 		@throw = (args...) ->
 			_pre_scope_transition_function()
@@ -34,6 +44,73 @@ class Scope
 			block.call self
 			unit
 
+		@filter = (args...) ->
+			{_arrays, defed, thisp, units} = _pre_iterator_function args
+			result = []
+			arrays.apply(null, _arrays).each((args...) ->
+				units._ -> @_ -> defed.apply thisp, args
+				units._ (v) -> result.push args.slice(0, -2) if v; @next())
+			units._ ->
+				@next.apply @, Arrays.zip result
+			units.end()
+			unit
+
+		@each = (args...) ->
+			{_arrays, defed, thisp, units} = _pre_iterator_function args
+			result = []
+			arrays.apply(null, _arrays).each (args...) ->
+				units._ -> @_ -> defed.apply thisp, args
+				units._ (args...) -> result.push args; @next()
+			units._ ->
+				@next.apply @, Arrays.zip result
+			units.end()
+			unit
+
+		@every = (args...) ->
+			{_arrays, defed, thisp, units} = _pre_iterator_function args
+			_arrays.forEach (item, index, array) ->
+				units._ -> @_ -> defed.call(thisp, item, index, array)
+				units._ (v) -> unless v then @out false else @next()
+			units._ -> @out true
+			units.end()
+			unit
+
+		@some = (args...) ->
+			{_arrays, defed, thisp, units} = _pre_iterator_function args
+			_arrays.forEach (item, index, array) ->
+				units._ -> @_ -> defed.call(thisp, item, index, array)
+				units._ (v) -> if v then @out true else @next()
+			units._ -> @out false
+			units.end()
+
+		@reduce = (array, block, init, reverse) ->
+			global = do -> this
+			defed = if block.is_defed then block else macro(block).end()
+			
+			i = 0
+			units = new Units ->
+				throw new TypeError() if array.length <= 0
+				@next()
+			array = array.reverse if reverse
+			if init?
+				units._ @next init, array[0], i++, array
+				_array = array.slice 1
+			else
+				i++
+				units._ -> @next array[0], array[1], i++, array
+				_array = array.slice 2
+
+			_array.forEach (item) ->
+				units._ (v1, v2, i, array) -> @_ -> defed.call global, v1, v2, i, array
+				units._ (v) -> @next v, item, i++, array
+			units._ (v1, v2, i, array) -> @_ -> defed.call global, v1, v2, i, array
+			units._ (result) -> @next result
+			units.end()
+			unit
+
+		@reduceRight = (block, init) ->
+			@reduce block, init, true
+
 # Manage transitioning to the next scope
 class Unit
 
@@ -51,26 +128,23 @@ class Unit
 		@next = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
-			if continuation?
-				continuation.next.apply continuation, args
-				return
+			return continuation.next.apply continuation, args if continuation?
+			
 			Units.CurrentContinuation = undefined
 
 		@throw = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
-			if continuation?
-				continuation.throw.apply continuation, args
-				return
+			return continuation.throw.apply continuation, args if continuation?
+
 			Units.CurrentContinuation = undefined
 			process.nextTick -> throw args[0]
 
 		@out = (args...) ->
 			if @use_outer_scope and continuation?
 				@_shift @scope, continuation
-			if continuation?
-				continuation.next.apply continuation, args
-				return
+			return continuation.next.apply continuation, args if continuation?
+			
 			Units.CurrentContinuation = undefined
 
 	# Connect Unit to Unit.
@@ -107,9 +181,7 @@ class Unit
 
 	# Execute function passed begin or _ or catch.
 	invoke: () ->
-		if @previous_unit?
-			@previous_unit.invoke()
-			return
+		return @previous_unit.invoke() if @previous_unit?
 
 		if @use_outer_scope and Units.CurrentContinuation?
 			@_shift Units.CurrentContinuation, @scope
@@ -136,32 +208,27 @@ class Unit
 
 	_shift: (from, to) ->
 		for own p of from
-			to[p] = from[p]
+			to[p] = from[p] unless p is "self" and to[p]?
 
 # Utility functions for Array
 arrays = (arrays...) ->
 	new Arrays arrays
 
 class Arrays
-	constructor: (arrays) ->
-		@ziped = Arrays.zip arrays
+	# if arrays is [[1, 2], [3, 4]],
+	# @ziped is [[1, 3], [2, 4]]
+	constructor: (@original) ->
+		@ziped = Arrays.zip original
 
 	@zip: (arrays) ->
 		max = 0
-		arrays.forEach (array) ->
-			len = array.length
-			max = len if max < len
+		max = array.length for array in arrays when max < array.length
 
-		line = []
-		for i in [0...max]
-			line.push arrays.map (v) ->
-							v[""+i]
-		line
+		(arrays.map((v) -> v[""+i]) for i in [0...max])
 
 	each: (block, thisp) ->
 		result = []
-		if not thisp?
-			thisp = global
+		thisp ?= global
 		@ziped.map (args, i, _array) ->
 			args.push i
 			args.push _array
@@ -171,14 +238,8 @@ class Arrays
 # Provide method for iterator
 class ArrayUnits
 	_prepare:(block, thisp) ->
-		if not thisp?
-			thisp = global
-		if block.is_defed
-			defed = block
-		else
-			defed = macro(block).end()
-		defed: defed,
-		thisp: thisp,
+		defed: if block.is_defed then block else macro(block).end(),
+		thisp: thisp ? global,
 		units: new Units(-> @next()),
 
 	# Returning array which consist of value returned true by the block
@@ -213,11 +274,7 @@ class ArrayUnits
 		new Units (array) ->
 			array.forEach (item, index, array) ->
 				units._((-> @_ -> defed.call(thisp, item, index, array)))
-					 ._ (v) ->
-							if not v
-								@out false
-							else
-								@next()
+					 ._ (v) -> unless v then @out false else @next()
 			@_ -> units._(-> @out true).end()
 
 	# Return true if function return true to any value in the array
@@ -275,7 +332,7 @@ class Units
 
 	# "_" and "catch" can receive Unit, Units, Array and function
 	for p in ['_', 'catch']
-		@::[p] = ((p) ->
+		@::[p] = do (p) ->
 			(block) ->
 				if block instanceof Unit
 					@tail = @tail[p] block
@@ -286,19 +343,19 @@ class Units
 					@tail = @tail[p] new Unit -> @next block
 				else
 					@tail = @tail[p](new Unit block)
-				return @)(p)
+				return @
 	
 	# Define iterators
 	for p in ['filter', 'each', 'every', 'some']
-		@::[p] = ((p) ->
+		@::[p] = do (p) ->
 			(block, thisp) ->
-				@_ new ArrayUnits()[p] block, thisp)(p)
+				@_ new ArrayUnits()[p] block, thisp
 		
 	# Define iterators
 	for p in ['reduce', 'reduceRight']
-		@::[p] = ((p) ->
+		@::[p] = do (p) ->
 			(block, init) ->
-				@_ new ArrayUnits()[p] block, init)(p)
+				@_ new ArrayUnits()[p] block, init
 
 	# Invoke functions from function by passed to "begin"
 	end: () ->
@@ -312,29 +369,28 @@ class Def
 		@factory = -> new Units block
 
 	for p in ['_', 'catch', 'each', 'filter', 'every', 'some']
-		@::[p] = ((p) ->
+		@::[p] = do (p) ->
 			(block) ->
 				previous_factory = @factory
 				@factory = ->
 					previous_factory()[p] block
-				@)(p)
+				@
 
 	for p in ['reduce', 'reduceRight']
-		@::[p] = ((p) ->
+		@::[p] = do (p) ->
 			(block, init) ->
 				previous_factory = @factory
 				@factory = ->
 					previous_factory()[p] block, init
-				@)(p)
+				@
 
 	end: ->
 		factory = @factory
 		use_outer_scope = @use_outer_scope
 		defed = (args...) ->
-					self = @
 					begin (->
 						@next.apply @, args)
-						, self, use_outer_scope
+						, @, use_outer_scope
 					._(factory())
 					.end()
 		defed.is_defed = true

@@ -91,7 +91,7 @@ class Scope
 			units = new Units ->
 				throw new TypeError() if array.length <= 0
 				@next()
-			array = array.reverse if reverse
+			array = array.reverse() if reverse
 			if init?
 				units._ @next init, array[0], i++, array
 				_array = array.slice 1
@@ -108,8 +108,8 @@ class Scope
 			units.end()
 			unit
 
-		@reduceRight = (block, init) ->
-			@reduce block, init, true
+		@reduceRight = (array, block, init) ->
+			@reduce array, block, init, true
 
 # Manage transitioning to the next scope
 class Unit

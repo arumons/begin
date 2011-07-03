@@ -70,21 +70,20 @@ Flow control library for node.js and CoffeeScript
  - catch
  - end
  - def
-
  - @_
  - @next
  - @throw
  - @out
 
-begin library connect each asyncronous processing.
-Connecting is done by passing @next or @throw or @out.
-If @next called, process jump to next "_" scope.
-@throw called, process jump to next "catch" scope.
-@out called, process jump to outer "_" scope 
-Please look at the examples above.
-Note each transition functions(@next, @throw, @out) must be called end of scope.
-This rule prevent that processing is made a spaghetti.
-If transition functions can't call end of socpe, use @_ like example below.
+begin library connect each asyncronous processing.  
+Connecting is done by passing @next or @throw or @out.  
+If @next called, process jump to next "_" scope.  
+@throw called, process jump to next "catch" scope.  
+@out called, process jump to outer "_" scope   
+Please look at the examples above.  
+Note each transition functions(@next, @throw, @out) must be called end of scope.  
+This rule prevent that processing is made a spaghetti.  
+If transition functions can't call end of socpe, use @_ like example below.  
 
 	# bad case
 	begin ->
@@ -120,7 +119,8 @@ If transition functions can't call end of socpe, use @_ like example below.
 	.end()
 
 ## Iterator
-In begin scope, iterators following is available
+In begin scope, iterators following is available  
+
  - @filter
  - @map
  - @every
@@ -128,9 +128,9 @@ In begin scope, iterators following is available
  - @reduce
  - @reduceRight
 
-begin library provide iterator functions for asyncronous processing.
-Interface of iterator is same iterator of javascript.
-Please look at the examples below and document of iteration methods at mdn (https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array)
+begin library provide iterator functions for asyncronous processing.  
+Interface of iterator is same iterator of javascript.  
+Please look at the examples below and document of iteration methods at mdn (https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array)  
 
 	# @filter
 	begin ->

@@ -64,14 +64,14 @@ Flow control library for node.js and CoffeeScript
 
 # Documentation
 
-# Core
+## Core
  - begin
  - _
  - catch
  - end
  - def
 
-# Iterator
+## Iterator
  - filter
  - map
  - every

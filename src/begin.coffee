@@ -44,6 +44,8 @@ class Scope
 			block.call self
 			unit
 
+		# Returning array which consist of value returned true by the block
+		# thisp is injected to @self in the block
 		@filter = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
 			result = []
@@ -55,6 +57,8 @@ class Scope
 			units.end()
 			unit
 
+		# Returning array which consist of value returned by the block
+		# thisp is injected to @self in the block
 		@each = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
 			result = []
@@ -66,23 +70,27 @@ class Scope
 			units.end()
 			unit
 
+		# Return true if function return true to all value in the array
 		@every = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
-			_arrays.forEach (item, index, array) ->
-				units._ -> @_ -> defed.call(thisp, item, index, array)
+			arrays.apply(null, _arrays).each (args...) ->
+				units._ -> @_ -> defed.apply thisp, args
 				units._ (v) -> unless v then @out false else @next()
 			units._ -> @out true
 			units.end()
 			unit
 
+		# Return true if function return true to any value in the array
 		@some = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
-			_arrays.forEach (item, index, array) ->
-				units._ -> @_ -> defed.call(thisp, item, index, array)
+			arrays.apply(null, _arrays).each (args...) ->
+				units._ -> @_ -> defed.apply thisp, args
 				units._ (v) -> if v then @out true else @next()
 			units._ -> @out false
 			units.end()
+			unit
 
+		# Apply a function an accumulator and each value of the array (left-to-right)
 		@reduce = (array, block, init, reverse) ->
 			global = do -> this
 			defed = if block.is_defed then block else macro(block).end()
@@ -107,14 +115,15 @@ class Scope
 			units._ (result) -> @next result
 			units.end()
 			unit
-
+		
+		# Apply a function an accumulator and each value of the array (right-to-left)
 		@reduceRight = (array, block, init) ->
 			@reduce array, block, init, true
 
 # Manage transitioning to the next scope
 class Unit
 
-	# block - executable function.
+	# block - a function.
 	# receiver - injection to "@self".
 	# use_outer_scope  - if it is true, valiable of outer scope is accesible.
 	constructor: (@block, receiver = undefined, @use_outer_scope = true) ->
@@ -235,95 +244,6 @@ class Arrays
 			result.push block.apply(thisp, args)
 		result
 
-# Provide method for iterator
-class ArrayUnits
-	_prepare:(block, thisp) ->
-		defed: if block.is_defed then block else macro(block).end(),
-		thisp: thisp ? global,
-		units: new Units(-> @next()),
-
-	# Returning array which consist of value returned true by the block
-	# thisp was injected to @self in the block
-	filter: (block, thisp) ->
-		{defed, thisp, units} = @_prepare(block, thisp)
-		result = []
-		new Units (_arrays...) ->
-			arrays.apply(null, _arrays).each((args...) ->
-				units._ (-> @_ -> defed.apply(thisp, args))
-				units._((v) -> result.push(args.slice(0, -2)) if v; @next()))
-			units._ ->
-				@next.apply @, Arrays.zip result
-			@_ -> units.end()
-
-	# Returning array which consist of value returned by the block
-	# thisp was injected to @self in the block
-	each: (block, thisp) ->
-		{defed, thisp, units} = @_prepare(block, thisp)
-		result = []
-		new Units (_arrays...) ->
-			arrays.apply(null, _arrays).each((args...) ->
-				units._ (-> @_ -> defed.apply(thisp, args))
-				units._((args...) -> result.push args; @next()))
-			units._ ->
-				@next.apply @, Arrays.zip result
-			@_ -> units.end()
-
-  	# Return true if function return true to all value in the array
-	every: (block, thisp) ->
-		{defed, thisp, units} = @_prepare(block, thisp)
-		new Units (array) ->
-			array.forEach (item, index, array) ->
-				units._((-> @_ -> defed.call(thisp, item, index, array)))
-					 ._ (v) -> unless v then @out false else @next()
-			@_ -> units._(-> @out true).end()
-
-	# Return true if function return true to any value in the array
-	some: (block, thisp) ->
-		{defed, thisp, units} = @_prepare(block, thisp)
-		new Units (array) ->
-			array.forEach (item, index, array) ->
-				units._((-> @_ -> defed.call(thisp, item, index, array)))
-					 ._ (v) ->
-							if v
-							    @out true
-							else
-								@next()
-			@_ -> units._(-> @out false).end()
-
-	# Apply a function an accumulator and each value of the array (left-to-right)
-	reduce: (block, init, reverse) ->
-		global = (-> this)()
-		defed
-		if block.is_defed
-			defed = block
-		else
-			defed = macro(block).end()
-		new Units (array) ->
-			i = 0
-			units = new Units ->
-				if array.length is 0
-					@throw new TypeError()
-				else
-					@next()
-			array = array.reverse() if reverse
-			if init?
-				units._(-> @next init, array[0], i++, array)
-				_array = array.slice(1)
-			else
-				i++
-				units._(-> @next array[0], array[1], i++, array)
-				_array = array.slice(2)
-
-			_array.forEach((item) ->
-				units._((v1, v2, i, array) -> @_ -> defed.call global, v1, v2, i, array)
-					 ._((v) -> @next v, item, i++, array))
-			units._((v1, v2, i, array) -> @_ -> defed.call global, v1, v2, i, array)
-			@_ -> units._((result) -> @next result).end()
-
-	# Apply a function an accumulator and each value of the array (right-to-left)
-	reduceRight: (block, init) ->
-		@reduce(block, init, true)
-
 # Manage Units
 class Units
 	constructor: (block, context = undefined, use_outer_scope = true) ->
@@ -339,24 +259,10 @@ class Units
 				else if block instanceof Units
 					@tail[p] block.head
 					@tail = block.tail
-				else if Array.isArray block
-					@tail = @tail[p] new Unit -> @next block
 				else
 					@tail = @tail[p](new Unit block)
 				return @
 	
-	# Define iterators
-	for p in ['filter', 'each', 'every', 'some']
-		@::[p] = do (p) ->
-			(block, thisp) ->
-				@_ new ArrayUnits()[p] block, thisp
-		
-	# Define iterators
-	for p in ['reduce', 'reduceRight']
-		@::[p] = do (p) ->
-			(block, init) ->
-				@_ new ArrayUnits()[p] block, init
-
 	# Invoke functions from function by passed to "begin"
 	end: () ->
 		@tail.end()
@@ -368,20 +274,12 @@ class Def
 	constructor: (block, @use_outer_scope = false) ->
 		@factory = -> new Units block
 
-	for p in ['_', 'catch', 'each', 'filter', 'every', 'some']
+	for p in ['_', 'catch']
 		@::[p] = do (p) ->
 			(block) ->
 				previous_factory = @factory
 				@factory = ->
 					previous_factory()[p] block
-				@
-
-	for p in ['reduce', 'reduceRight']
-		@::[p] = do (p) ->
-			(block, init) ->
-				previous_factory = @factory
-				@factory = ->
-					previous_factory()[p] block, init
 				@
 
 	end: ->
@@ -396,12 +294,9 @@ class Def
 		defed.is_defed = true
 		defed
 
-# Receive Array or (block, thisp, use_outer_scope)
+# Receive (block, thisp, use_outer_scope)
 begin = (args...) ->
-	if Array.isArray args[0]
-		new Units((-> @next.apply(@, args)), undefined, true)
-	else
-		new Units args[0], args[1], args[2]
+	new Units args[0], args[1], args[2]
 
 # Make freezed Units which can't access outer scope.
 def = (block) ->

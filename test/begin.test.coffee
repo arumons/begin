@@ -362,9 +362,10 @@ exports.def_with_receiver_1 = (test) ->
 # filtering value by the provided function
 exports.filter_1 = (test) ->
 	test.expect 2
-	begin([1, 2, 3]).filter((v) ->
-		@a = 10
-		@next v % 2 is 0)
+	begin ->
+		@filter [1,2,3], (v) ->
+			@a = 10
+			@next v % 2 is 0
 	._ (lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2]
@@ -372,38 +373,13 @@ exports.filter_1 = (test) ->
 		@next()
 	.end()
 
-# begin [..] equal begin -> @next [..]
+# scope in filter succeed to next scope
 exports.filter_2 = (test) ->
 	test.expect 1
 	begin ->
-		@next [1,2,3]
-	.filter (v) ->
-		@next v % 2 is 1
-	._ (lst) ->
-		test.deepEqual lst, [1, 3]
-		test.done()
-		@next()
-	.end()
-
-# _ also accept array
-exports.filter_3 = (test) ->
-	test.expect 1
-	begin ->
-		@next 100
-	._([1,2,3]).filter (v) ->
-		@next v % 2 is 1
-	._ (lst) ->
-		test.deepEqual lst, [1, 3]
-		test.done()
-		@next()
-	.end()
-
-# scope in filter succeed to next scope
-exports.filter_4 = (test) ->
-	test.expect 1
-	begin([1]).filter (v) ->
-		@test = 30
-		@next true
+		@filter [1], (v) ->
+			@test = 30
+			@next true
 	._ (lst) ->
 		test.equal @test, 30
 		test.done()
@@ -411,14 +387,15 @@ exports.filter_4 = (test) ->
 	.end()
 
 # filter accept defed
-exports.filter_5 = (test) ->
+exports.filter_3 = (test) ->
 	test.expect 2
 	a = def (v) ->
 			@test = 30
 			@next true
 		.end()
 		
-	begin([5]).filter(a)
+	begin ->
+		@filter [5], a
 	._ (lst) ->
 		test.equal @test, undefined
 		test.deepEqual lst, [5]
@@ -427,11 +404,13 @@ exports.filter_5 = (test) ->
 	.end()
 
 # throw called from filter jump to catch
-exports.filter_6 = (test) ->
+exports.filter_4 = (test) ->
 	test.expect 1
-	begin([1]).filter (v) ->
-		@throw true
+	begin ->
+		@filter [1], (v) ->
+			@throw true
 	._ (v) ->
+		test.done()
 		@next false
 	.catch (v) ->
 		test.ok v, 'catched'
@@ -439,13 +418,14 @@ exports.filter_6 = (test) ->
 		@next()
 	.end()
 
-# 
-exports.filter_7 = (test) ->
+ 
+exports.filter_5 = (test) ->
 	test.expect 2
 	begin ->
 		@_ ->
-			begin([1, 2]).filter (v) ->
-		        @out true
+			begin ->
+				@filter [1,2], (v) ->
+		        	@out true
 			._ (v) ->
 				test.deepEqual v, [1,2]
 				@next true
@@ -460,9 +440,10 @@ exports.filter_7 = (test) ->
 
 exports.each_1 = (test) ->
 	test.expect 2
-	begin([1, 2, 3]).each (v) ->
-		@a = 10
-		@next v * 2
+	begin ->
+		@each [1,2,3], (v) ->
+			@a = 10
+			@next v * 2
 	._ (lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2, 4, 6]
@@ -471,34 +452,11 @@ exports.each_1 = (test) ->
 	.end()
 
 exports.each_2 = (test) ->
-	test.expect 1
-	begin ->
-		@next [1,2,3]
-	.each (v) ->
-		@next v * 2
-	._ (lst) ->
-		test.deepEqual lst, [2,4,6]
-		test.done()
-		@next()
-	.end()
-
-exports.each_3 = (test) ->
-	test.expect 1
-	begin ->
-		@next 100
-	._([1,2,3]).each (v) ->
-		@next v * 3
-	._ (lst) ->
-		test.deepEqual lst, [3,6,9]
-		test.done()
-		@next()
-	.end()
-
-exports.each_4 = (test) ->
 	test.expect 2
-	begin([1,2,3]).each (v) ->
-		@a = 10
-		@next v * 2
+	begin ->
+		@each [1,2,3], (v) ->
+			@a = 10
+			@next v * 2
 	._ (lst) ->
 		test.equal @a, 10
 		test.deepEqual lst, [2,4,6]
@@ -506,13 +464,14 @@ exports.each_4 = (test) ->
 		@next()
 	.end()
 
-exports.each_5 = (test) ->
+exports.each_3 = (test) ->
 	test.expect 1
 	a = def (v) ->
 			@next v * v
 		.end()
 
-	begin([1,2,3]).each(a)
+	begin ->
+		@each [1,2,3], a
 	._ (lst) ->
 		test.deepEqual lst, [1,4,9]
 		test.done()
@@ -521,8 +480,9 @@ exports.each_5 = (test) ->
 
 exports.every_1 = (test) ->
 	test.expect 1
-	begin([1,2,3]).every (v) ->
-		@next v < 5
+	begin ->
+		@every [1,2,3], (v) ->
+			@next v < 5
 	._ (v) ->
 		test.equal true, v
 		test.done()
@@ -530,34 +490,11 @@ exports.every_1 = (test) ->
 	.end()
 
 exports.every_2 = (test) ->
-	test.expect 1
-	begin ->
-		@next [1,2,3]
-	.every (v) ->
-		@next v % 2 is 1
-	._ (v) ->
-		test.equal false, v
-		test.done()
-		@next()
-	.end()
-
-exports.every_3 = (test) ->
-	test.expect 1
-	begin ->
-		@next 100
-	._([1,2,3]).every (v) ->
-		@next v < 4
-	._ (v) ->
-		test.equal true, v
-		test.done()
-		@next()
-	.end()
-
-exports.every_4 = (test) ->
 	test.expect 2
-	begin([1,2,3]).every (v) ->
-		@a = 10
-		@next v < 2
+	begin ->
+		@every [1,2,3], (v) ->
+			@a = 10
+			@next v < 2
 	._ (v) ->
 		test.equal @a, 10
 		test.equal v, false
@@ -565,13 +502,14 @@ exports.every_4 = (test) ->
 		@next()
 	.end()
 
-exports.every_5 = (test) ->
+exports.every_3 = (test) ->
 	test.expect 1
 	a = def (v) ->
 			@next v > 0
 		.end()
 
-	begin([1,2,3]).every(a)
+	begin ->
+		@every [1,2,3], a
 	._ (v) ->
 		test.equal v, true
 		test.done()
@@ -580,8 +518,9 @@ exports.every_5 = (test) ->
 
 exports.some_1 = (test) ->
 	test.expect 1
-	begin([1,2,3]).some (v) ->
-		@next v is 2
+	begin ->
+		@some [1,2,3], (v) ->
+			@next v is 2
 	._ (v) ->
 		test.equal true, v
 		test.done()
@@ -589,34 +528,11 @@ exports.some_1 = (test) ->
 	.end()
 
 exports.some_2 = (test) ->
-	test.expect 1
-	begin ->
-		@next [1,2,3]
-	.some (v) ->
-		@next v is 1
-	._ (v) ->
-		test.equal v, true
-		test.done()
-		@next()
-	.end()
-
-exports.some_3 = (test) ->
-	test.expect 1
-	begin ->
-		@next 100
-	._([1,2,3]).some (v) ->
-		@next v > 4
-	._ (v) ->
-		test.equal v, false
-		test.done()
-		@next()
-	.end()
-
-exports.some_4 = (test) ->
 	test.expect 2
-	begin([1,2,3]).some (v) ->
-		@a = 10
-		@next v > 4
+	begin ->
+		@some [1,2,3], (v) ->
+			@a = 10
+			@next v > 4
 	._ (v) ->
 		test.equal @a, 10
 		test.equal v, false
@@ -624,13 +540,14 @@ exports.some_4 = (test) ->
 		@next()
 	.end()
 
-exports.some_5 = (test) ->
+exports.some_3 = (test) ->
 	test.expect 1
 	a = def (v) ->
 			@next v > 2
 		.end()
 
-	begin([1,2,3]).some(a)
+	begin ->
+		@some [1,2,3], a
 	._ (v) ->
 		test.equal v, true
 		test.done()
@@ -639,8 +556,9 @@ exports.some_5 = (test) ->
 
 exports.reduce_1 = (test) ->
 	test.expect 1
-	begin([1,2,3]).reduce (pv, cv) ->
-		@next pv * cv
+	begin ->
+		@reduce [1,2,3], (pv, cv) ->
+			@next pv * cv
 	._ (v) ->
 		test.equal v, 6
 		test.done()
@@ -648,35 +566,11 @@ exports.reduce_1 = (test) ->
 	.end()
 
 exports.reduce_2 = (test) ->
-	test.expect 1
-	begin ->
-		@next [1,2,3]
-	.reduce(((pv, cv) ->
-		@next pv * cv), 4)
-	._ (v) ->
-		test.equal v, 24
-		test.done()
-		@next()
-	.end()
-
-exports.reduce_3 = (test) ->
-	test.expect 1
-	begin ->
-		@next 100
-	._([1,2,3]).reduce((pv, cv) ->
-		@next pv * cv
-	, 4)
-	._ (v) ->
-		test.equal v, 24
-		test.done()
-		@next()
-	.end()
-
-exports.reduce_4 = (test) ->
 	test.expect 2
-	begin([1,2,3]).reduce((pv, cv) ->
-		@a = 20
-		@next pv * cv)
+	begin ->
+		@reduce [1,2,3], (pv, cv) ->
+			@a = 20
+			@next pv * cv
 	._ (v) ->
 		test.equal @a, 20
 		test.equal v, 6
@@ -684,14 +578,15 @@ exports.reduce_4 = (test) ->
 		@next()
 	.end()
 
-exports.reduce_5 = (test) ->
+exports.reduce_3 = (test) ->
 	test.expect 2
 	f = def (pv, cv) ->
 			@a = 10
 			@next pv * cv
 		.end()
 
-	begin([1,2,3]).reduce(f)
+	begin ->
+		@reduce [1,2,3], f
 	._ (v) ->
 		test.equal @a, undefined
 		test.equal v, 6
@@ -702,44 +597,21 @@ exports.reduce_5 = (test) ->
 
 exports.reduceRight_1 = (test) ->
 	test.expect 1
-	begin([1,2,3]).reduceRight((pv, cv) ->
-		@next pv - cv)
+	begin ->
+		@reduceRight [1,2,3], (pv, cv) ->
+			@next pv - cv
 	._ (v) ->
 		test.equal v, 0
 		test.done()
 		@next()
 	.end()
 
-exports.reduceRight_2 = (test) ->
-	test.expect 1
-	begin(->
-		@next [1,2,3])
-	.reduceRight((pv, cv) ->
-		@next pv - cv
-	, 4)
-	._ (v) ->
-		test.equal v, -2
-		test.done()
-		@next()
-	.end()
-
-exports.reduceRight_3 = (test) ->
-	test.expect 1
-	begin(->
-		@next 100)
-	._([1,2,3,4]).reduceRight((pv, cv) ->
-		@next pv - cv)
-	._ (v) ->
-		test.equal v, -2
-		test.done()
-		@next()
-	.end()
-
 exports.reduceRight_4 = (test) ->
 	test.expect 2
-	begin([1,2,3]).reduceRight((pv, cv) ->
-		@a = 10
-		@next pv - cv)
+	begin ->
+		@reduceRight [1,2,3], (pv, cv) ->
+			@a = 10
+			@next pv - cv
 	._ (v) ->
 		test.equal v, 0
 		test.equal @a, 10

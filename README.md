@@ -4,7 +4,7 @@ Flow control library for node.js and CoffeeScript
 
 # Quick Exmaples
 
-	{begin} = require 'begin'
+	{begin, def} = require 'begin'
 	fs = require 'fs'
 
 	# example 1
@@ -29,7 +29,7 @@ Flow control library for node.js and CoffeeScript
 		@next()
 	.end()
 
-	# exapmle 3
+	# example 3
 	begin ->
 		@_ ->
 			begin ->
@@ -49,5 +49,34 @@ Flow control library for node.js and CoffeeScript
 		# data is 3 or 4 or 5 
 		@next()
 	.end()
+
+	# exapmple 4
+	f = def (file) ->
+			@_ -> fs.readFile file, @next
+		.end()
+
+	begin ->
+		@_ -> f()
+	._ (data) ->
+		console.log data
+		@next()
+	.end()
+
+# Documentation
+
+# Core
+ - begin
+ - _
+ - catch
+ - end
+ - def
+
+# Iterator
+ - filter
+ - map
+ - every
+ - some
+ - reduce
+ - reduceRight
 
 

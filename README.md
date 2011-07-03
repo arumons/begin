@@ -70,16 +70,16 @@ Flow control library for node.js and CoffeeScript
  - catch
  - end
  - def
- - @_
+ - @`_`
  - @next
  - @throw
  - @out
 
 begin library connect each asyncronous processing.
 Connecting is done by passing @next or @throw or @out.
-If @next called, process jump to next "_" scope.
+If @next called, process jump to next "`_`" scope.
 @throw called, process jump to next "catch" scope.
-@out called, process jump to outer "_" scope.
+@out called, process jump to outer "`_`" scope.
 Please look at the examples above.
 Note each transition functions(@next, @throw, @out) must be called end of scope.
 This rule prevent that processing is made a spaghetti.

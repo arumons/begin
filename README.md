@@ -8,7 +8,7 @@ Flow control library for node.js and CoffeeScript
 	fs = require 'fs'
 
 	begin ->
-		@_ -> fs.readFile '/tec/passwd', @next
+		@_ -> fs.readFile '/etc/passwd', @next
 	._ (data) ->
 		console.log data
 	.end()

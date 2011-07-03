@@ -49,7 +49,7 @@ class Scope
 		@filter = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
 			result = []
-			arrays.apply(null, _arrays).each((args...) ->
+			arrays.apply(null, _arrays).map((args...) ->
 				units._ -> @_ -> defed.apply thisp, args
 				units._ (v) -> result.push args.slice(0, -2) if v; @next())
 			units._ ->
@@ -59,10 +59,10 @@ class Scope
 
 		# Returning array which consist of value returned by the block
 		# thisp is injected to @self in the block
-		@each = (args...) ->
+		@map = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
 			result = []
-			arrays.apply(null, _arrays).each (args...) ->
+			arrays.apply(null, _arrays).map (args...) ->
 				units._ -> @_ -> defed.apply thisp, args
 				units._ (args...) -> result.push args; @next()
 			units._ ->
@@ -73,7 +73,7 @@ class Scope
 		# Return true if function return true to all value in the array
 		@every = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
-			arrays.apply(null, _arrays).each (args...) ->
+			arrays.apply(null, _arrays).map (args...) ->
 				units._ -> @_ -> defed.apply thisp, args
 				units._ (v) -> unless v then @out false else @next()
 			units._ -> @out true
@@ -83,7 +83,7 @@ class Scope
 		# Return true if function return true to any value in the array
 		@some = (args...) ->
 			{_arrays, defed, thisp, units} = _pre_iterator_function args
-			arrays.apply(null, _arrays).each (args...) ->
+			arrays.apply(null, _arrays).map (args...) ->
 				units._ -> @_ -> defed.apply thisp, args
 				units._ (v) -> if v then @out true else @next()
 			units._ -> @out false
@@ -235,7 +235,7 @@ class Arrays
 
 		(arrays.map((v) -> v[""+i]) for i in [0...max])
 
-	each: (block, thisp) ->
+	map: (block, thisp) ->
 		result = []
 		thisp ?= global
 		@ziped.map (args, i, _array) ->

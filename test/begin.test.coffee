@@ -438,10 +438,10 @@ exports.filter_5 = (test) ->
 		@next()
 	.end()
 
-exports.each_1 = (test) ->
+exports.map_1 = (test) ->
 	test.expect 2
 	begin ->
-		@each [1,2,3], (v) ->
+		@map [1,2,3], (v) ->
 			@a = 10
 			@next v * 2
 	._ (lst) ->
@@ -451,10 +451,10 @@ exports.each_1 = (test) ->
 		@next()
 	.end()
 
-exports.each_2 = (test) ->
+exports.map_2 = (test) ->
 	test.expect 2
 	begin ->
-		@each [1,2,3], (v) ->
+		@map [1,2,3], (v) ->
 			@a = 10
 			@next v * 2
 	._ (lst) ->
@@ -464,14 +464,14 @@ exports.each_2 = (test) ->
 		@next()
 	.end()
 
-exports.each_3 = (test) ->
+exports.map_3 = (test) ->
 	test.expect 1
 	a = def (v) ->
 			@next v * v
 		.end()
 
 	begin ->
-		@each [1,2,3], a
+		@map [1,2,3], a
 	._ (lst) ->
 		test.deepEqual lst, [1,4,9]
 		test.done()

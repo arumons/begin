@@ -62,21 +62,126 @@ Flow control library for node.js and CoffeeScript
 		@next()
 	.end()
 
-# Documentation
+# APIs
 
 ## Core
  - begin
- - _
+ - _     
  - catch
  - end
  - def
 
+ - @_
+ - @next
+ - @throw
+ - @out
+
+begin library connect each asyncronous processing.
+Connecting is done by passing @next or @throw or @out.
+If @next called, process jump to next "_" scope.
+@throw called, process jump to next "catch" scope.
+@out called, process jump to outer "_" scope 
+Please look at the examples above.
+Note each transition functions(@next, @throw, @out) must be called end of scope.
+This rule prevent that processing is made a spaghetti.
+If transition functions can't call end of socpe, use @_ like example below.
+
+	# bad case
+	begin ->
+		@next()
+		console.log # NG!! Exception will be thrown!
+	._ ->
+		@next()
+	.end()
+
+	# good case
+	begin ->
+		console.log "test"
+		@next() # OK
+	._ ->
+		@next()
+	.end()
+
+	# bad case2
+	begin ->
+		fs.readFile "/etc/passwd", @next # NG!! The final processing of the scope is readFile rather than @next...
+	._ (data) ->
+		# It will not come here...
+		console.log data
+		@next()
+	.end()
+
+	# good case2 (use @_)
+	begin ->
+		@_ -> fs.readFile "/etc/passwd", @next # OK
+	._ (data) ->
+		console.log data
+		@next()
+	.end()
+
 ## Iterator
- - filter
- - map
- - every
- - some
- - reduce
- - reduceRight
+In begin scope, iterators following is available
+ - @filter
+ - @map
+ - @every
+ - @some
+ - @reduce
+ - @reduceRight
 
+begin library provide iterator functions for asyncronous processing.
+Interface of iterator is same iterator of javascript.
+Please look at the examples below and document of iteration methods at mdn (https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Array)
 
+	# @filter
+	begin ->
+		@filter [1,2,3], (v) ->
+			@next v % 2 is 0
+	._ (lst) ->
+		lst # [2]
+		@next()
+	.end()
+
+	# @map
+	begin ->
+		@map [1,2,3], (v) ->
+			@next v * 2
+	._ (lst) ->
+		lst # [2,4,6]
+		@next()
+	.end()
+
+	# @every
+	begin ->
+		@every [1,2,3], (v) ->
+			@next v < 4
+	._ (result) ->
+		result # true
+		@next()
+	.end()
+	
+	# @some
+	begin ->
+		@some [1,2,3], (v) ->
+			@next v < 2
+	._ (result) ->
+		result # true
+		@next()
+	.end()
+
+	# @reduce
+	begin ->
+		@reduce [1,2,3], (pv, cv) ->
+			@next pv - cv
+	._ (result) ->
+		result # -4
+		@next()
+	.end()
+
+	# @reduceRight
+	begin ->
+		@reduceRight [1,2,3], (pv, cv) ->
+			@next pv - cv
+	._ (result) ->
+		result # 0
+		@next()
+	.end()

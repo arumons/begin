@@ -62,6 +62,10 @@ Flow control library for node.js and CoffeeScript
 		@next()
 	.end()
 
+# Install
+
+	npm install begin.js
+
 # APIs
 
 ## Core

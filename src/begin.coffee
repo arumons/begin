@@ -1,8 +1,6 @@
 # This library is a flow control library for node.js and CoffeeScript.
 # For more information, please see https://github.com/arumons/begin .
 
-util = require 'util'
-
 # Manage a scope
 class Scope
 	constructor: (unit) ->

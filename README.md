@@ -4,7 +4,7 @@ Flow control library for node.js and CoffeeScript
 
 # Quick Exmaples
 
-	{begin, def} = require 'begin'
+	{begin, def} = require 'begin.js'
 	fs = require 'fs'
 
 	# example 1

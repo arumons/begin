@@ -62,6 +62,15 @@ Flow control library for node.js and CoffeeScript
 		@next()
 	.end()
 
+	# exapmle 5
+	obj = {name: "bob"}
+	obj.f = def (file) ->
+				@_ -> fs.writeFile file, @self.name, @next
+			._ (err) ->
+				throw err if err
+				@_ -> fs.writeFile file, @self.age, @next
+			.end()
+
 # Install
 
 	npm install begin.js

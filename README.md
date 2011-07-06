@@ -71,6 +71,13 @@ Flow control library for node.js and CoffeeScript
 				@_ -> fs.writeFile file, @self.age, @next
 			.end()
 
+	begin ->
+		@_ -> obj.f()
+	._ (err) ->
+		throw err if err
+		@next()
+	.end()
+
 # Install
 
 	npm install begin.js

@@ -6,9 +6,6 @@ class Scope
 	constructor: (unit) ->
 		jumped = false
 		_err_msg = "you can call scope transition function only once in a scope"
-		_pre_scope_transition_function = ->
-			throw new Error _err_msg if jumped
-			jumped = true
 
 		_pre_iterator_function = (args) ->
 			_arrays = (arg for arg in args when Array.isArray arg)
@@ -21,19 +18,16 @@ class Scope
 			 
 		# Jump to the next "catch" scope
 		@throw = (args...) ->
-			_pre_scope_transition_function()
 			unit.throw.apply unit, args
 			unit
 
 		# Jump to outer scope
 		@out = (args...) ->
-			_pre_scope_transition_function()
 			unit.out.apply unit, args
 			unit
 
 		# jump to "_" scope
 		@next = (args...) ->
-			_pre_scope_transition_function()
 			unit.next.apply unit, args
 			unit
 

@@ -1,6 +1,6 @@
 {
-	"name" : "begin",
-	"version": "0.1.0",
+	"name" : "begin.js",
+	"version": "0.1.2",
 	"description": "Flow control library for Node.js and CoffeeScript",
 	"main": "./lib/begin"
 }	

@@ -2,6 +2,11 @@
 
 Flow control library for node.js and CoffeeScript
 
+Features ..
+
+ - OOP support.
+ - Provide several scope transition functions.
+
 # Quick Exmaples
 
 	{begin, def} = require 'begin.js'
